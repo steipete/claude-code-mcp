@@ -4,44 +4,7 @@ An MCP (Model Context Protocol) server that allows running Claude Code in one-sh
 
 Did you notice that Cursor sometimes struggles with complex, multi-step edits or operations? This server, with its powerful unified `code` tool, aims to make Claude a more direct and capable agent for your coding tasks.
 
-<img src="screenshot.png" width="600" alt="Screenshot">
-
-## Key Use Cases
-
-This server, through its unified `code` tool, unlocks a wide range of powerful capabilities by giving your AI direct access to the Claude Code CLI. Here are some examples of what you can achieve:
-
-1.  **Code Generation, Analysis & Refactoring:**
-    -   `"Generate a Python script to parse CSV data and output JSON."`
-    -   `"Analyze my_script.py for potential bugs and suggest improvements."`
-
-2.  **File System Operations (Create, Read, Edit, Manage):**
-    -   **Creating Files:** `"Your work folder is /Users/steipete/my_project\n\nCreate a new file named 'config.yml' in the 'app/settings' directory with the following content:\nport: 8080\ndatabase: main_db"`
-    -   **Editing Files:** `"Your work folder is /Users/steipete/my_project\n\nEdit file 'public/css/style.css': Add a new CSS rule at the end to make all 'h2' elements have a 'color: navy'."`
-    -   **Moving/Copying/Deleting:** `"Your work folder is /Users/steipete/my_project\n\nMove the file 'report.docx' from the 'drafts' folder to the 'final_reports' folder and rename it to 'Q1_Report_Final.docx'."`
-
-3.  **Version Control (Git):**
-    -   `"Your work folder is /Users/steipete/my_project\n\n1. Stage the file 'src/main.java'.\n2. Commit the changes with the message 'feat: Implement user authentication'.\n3. Push the commit to the 'develop' branch on origin."`
-
-4.  **Running Terminal Commands:**
-    -   `"Your work folder is /Users/steipete/my_project/frontend\n\nRun the command 'npm run build'."`
-    -   `"Open the URL https://developer.mozilla.org in my default web browser."`
-
-5.  **Web Search & Summarization:**
-    -   `"Search the web for 'benefits of server-side rendering' and provide a concise summary."`
-
-6.  **Complex Multi-Step Workflows:**
-    -   Automate version bumps, update changelogs, and tag releases: `"Your work folder is /Users/steipete/my_project\n\nFollow these steps: 1. Update the version in package.json to 2.5.0. 2. Add a new section to CHANGELOG.md for version 2.5.0 with the heading '### Added' and list 'New feature X'. 3. Stage package.json and CHANGELOG.md. 4. Commit with message 'release: version 2.5.0'. 5. Push the commit. 6. Create and push a git tag v2.5.0."`
-
-7.  **Repairing Files with Syntax Errors:**
-    -   `"Your work folder is /path/to/project\n\nThe file 'src/utils/parser.js' has syntax errors after a recent complex edit that broke its structure. Please analyze it, identify the syntax errors, and correct the file to make it valid JavaScript again, ensuring the original logic is preserved as much as possible."`
-
-8.  **Interacting with GitHub (e.g., Creating a Pull Request):**
-    -   `"Your work folder is /Users/steipete/my_project\n\nCreate a GitHub Pull Request in the repository 'owner/repo' from the 'feature-branch' to the 'main' branch. Title: 'feat: Implement new login flow'. Body: 'This PR adds a new and improved login experience for users.'"`
-
-9.  **Interacting with GitHub (e.g., Checking PR CI Status):**
-    -   `"Your work folder is /Users/steipete/my_project\n\nCheck the status of CI checks for Pull Request #42 in the GitHub repository 'owner/repo'. Report if they have passed, failed, or are still running."`
-
-**CRITICAL: Remember to provide Current Working Directory (CWD) context in your prompts for file system or git operations (e.g., `"Your work folder is /path/to/project\n\n...your command..."`).**
+<img src="docs/screenshot.png" width="600" alt="Screenshot">
 
 ## Overview
 
@@ -177,6 +140,43 @@ The server's behavior can be customized using these environment variables:
 - `MCP_CLAUDE_DEBUG`: Set to `true` for verbose debug logging from this MCP server. Default: `false`.
 
 These can be set in your shell environment or within the `env` block of your `mcp.json` server configuration (though the `env` block in `mcp.json` examples was removed for simplicity, it's still a valid way to set them for the server process if needed).
+
+## Key Use Cases
+
+This server, through its unified `code` tool, unlocks a wide range of powerful capabilities by giving your AI direct access to the Claude Code CLI. Here are some examples of what you can achieve:
+
+1.  **Code Generation, Analysis & Refactoring:**
+    -   `"Generate a Python script to parse CSV data and output JSON."`
+    -   `"Analyze my_script.py for potential bugs and suggest improvements."`
+
+2.  **File System Operations (Create, Read, Edit, Manage):**
+    -   **Creating Files:** `"Your work folder is /Users/steipete/my_project\n\nCreate a new file named 'config.yml' in the 'app/settings' directory with the following content:\nport: 8080\ndatabase: main_db"`
+    -   **Editing Files:** `"Your work folder is /Users/steipete/my_project\n\nEdit file 'public/css/style.css': Add a new CSS rule at the end to make all 'h2' elements have a 'color: navy'."`
+    -   **Moving/Copying/Deleting:** `"Your work folder is /Users/steipete/my_project\n\nMove the file 'report.docx' from the 'drafts' folder to the 'final_reports' folder and rename it to 'Q1_Report_Final.docx'."`
+
+3.  **Version Control (Git):**
+    -   `"Your work folder is /Users/steipete/my_project\n\n1. Stage the file 'src/main.java'.\n2. Commit the changes with the message 'feat: Implement user authentication'.\n3. Push the commit to the 'develop' branch on origin."`
+
+4.  **Running Terminal Commands:**
+    -   `"Your work folder is /Users/steipete/my_project/frontend\n\nRun the command 'npm run build'."`
+    -   `"Open the URL https://developer.mozilla.org in my default web browser."`
+
+5.  **Web Search & Summarization:**
+    -   `"Search the web for 'benefits of server-side rendering' and provide a concise summary."`
+
+6.  **Complex Multi-Step Workflows:**
+    -   Automate version bumps, update changelogs, and tag releases: `"Your work folder is /Users/steipete/my_project\n\nFollow these steps: 1. Update the version in package.json to 2.5.0. 2. Add a new section to CHANGELOG.md for version 2.5.0 with the heading '### Added' and list 'New feature X'. 3. Stage package.json and CHANGELOG.md. 4. Commit with message 'release: version 2.5.0'. 5. Push the commit. 6. Create and push a git tag v2.5.0."`
+
+7.  **Repairing Files with Syntax Errors:**
+    -   `"Your work folder is /path/to/project\n\nThe file 'src/utils/parser.js' has syntax errors after a recent complex edit that broke its structure. Please analyze it, identify the syntax errors, and correct the file to make it valid JavaScript again, ensuring the original logic is preserved as much as possible."`
+
+8.  **Interacting with GitHub (e.g., Creating a Pull Request):**
+    -   `"Your work folder is /Users/steipete/my_project\n\nCreate a GitHub Pull Request in the repository 'owner/repo' from the 'feature-branch' to the 'main' branch. Title: 'feat: Implement new login flow'. Body: 'This PR adds a new and improved login experience for users.'"`
+
+9.  **Interacting with GitHub (e.g., Checking PR CI Status):**
+    -   `"Your work folder is /Users/steipete/my_project\n\nCheck the status of CI checks for Pull Request #42 in the GitHub repository 'owner/repo'. Report if they have passed, failed, or are still running."`
+
+**CRITICAL: Remember to provide Current Working Directory (CWD) context in your prompts for file system or git operations (e.g., `"Your work folder is /path/to/project\n\n...your command..."`).**
 
 ## Troubleshooting
 
