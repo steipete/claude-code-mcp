@@ -1,8 +1,5 @@
 # Node modules
 node_modules/
 
-# Compiled TypeScript output
-dist/
-
 # macOS specific
-.DS_Store 
+.DS_Store
