@@ -16,6 +16,8 @@
     - Managing complex multi-step workflows.
   - **CRITICAL:** Added explicit guidance and examples on the necessity for the user's prompt to provide Current Working Directory (CWD) context (e.g., "Your work folder is /path/to/project") when operations depend on it.
   - Added an "Advanced Usage Tip" explaining how to use temporary files to pass large text inputs to Claude, avoiding JSON formatting issues.
+  - Added GitHub interaction examples (creating PRs, checking CI status) to the `code` tool description in `src/server.ts` and `README.md`.
+  - Removed 'options.tools' from all documentation.
 - Updated `README.md` to remove references to `magic_file` and reflect the new, comprehensive `code` tool description.
 
 ## [1.3.0] - 2025-05-13

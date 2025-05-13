@@ -64,9 +64,6 @@ function findClaudeCli(debugMode: boolean): string {
  */
 interface ClaudeCodeArgs {
   prompt: string;
-  options?: {
-    tools?: string[];
-  };
 }
 
 // Ensure spawnAsync is defined correctly *before* the class
@@ -189,30 +186,21 @@ The server **does NOT automatically inject 'Your work folder is...'** into your 
 7.  **Repairing Files with Syntax Errors:**
     - \`"Your work folder is /path/to/project\\n\\nThe file 'src/utils/parser.js' has syntax errors after a recent complex edit that broke its structure. Please analyze it, identify the syntax errors, and correct the file to make it valid JavaScript again, ensuring the original logic is preserved as much as possible."\`
 
+8.  **Interacting with GitHub (e.g., Creating a Pull Request):**
+    - \`"Your work folder is /Users/steipete/my_project\\n\\nCreate a GitHub Pull Request in the repository 'owner/repo' from the 'feature-branch' to the 'main' branch. Title: 'feat: Implement new login flow'. Body: 'This PR adds a new and improved login experience for users.'"\`
+
+9.  **Interacting with GitHub (e.g., Checking PR CI Status):**
+    - \`"Your work folder is /Users/steipete/my_project\\n\\nCheck the status of CI checks for Pull Request #42 in the GitHub repository 'owner/repo'. Report if they have passed, failed, or are still running."\`
+
 **Prompting Best Practices:** The more detailed, clear, and well-structured your prompt, the better Claude can understand and execute your intent. For complex tasks, breaking them down into numbered steps within the prompt is highly effective.
 
-**Advanced Usage Tip:** When working with the \\\`code\\\` tool, you can set up complex workflows by using explicit step-by-step instructions. For example, instead of just asking \\\`"Fix the bugs in my code"\\\`, try: \\\`"Your work folder is /path/to/project\\n\\n1. Run the test suite to identify failing tests\\n2. Examine the failing tests to understand what's breaking\\n3. Check the relevant source files and fix the issues\\n4. Run the tests again to verify your fixes worked\\n5. Explain what you changed and why"\\\`
-
-\`options.tools\` can be used to specify which internal Claude tools (e.g., \`Bash\`, \`Read\`, \`Write\`) are allowed for the execution; common tools are enabled by default if this is omitted.`,
+**Advanced Usage Tip:** When working with the \\\`code\\\` tool, you can set up complex workflows by using explicit step-by-step instructions. For example, instead of just asking \\\`"Fix the bugs in my code"\\\`, try: \\\`"Your work folder is /path/to/project\\n\\n1. Run the test suite to identify failing tests\\n2. Examine the failing tests to understand what's breaking\\n3. Check the relevant source files and fix the issues\\n4. Run the tests again to verify your fixes worked\\n5. Explain what you changed and why"\\\``,
           inputSchema: {
             type: 'object',
             properties: {
               prompt: {
                 type: 'string',
                 description: 'The detailed natural language prompt for Claude to execute.',
-              },
-              options: {
-                type: 'object',
-                properties: {
-                  tools: {
-                    type: 'array',
-                    items: {
-                      type: 'string'
-                    },
-                    description: 'Optional internal Claude tools to enable (e.g., Bash, Read, Write).',
-                  }
-                },
-                description: 'Additional options for Claude Code execution.',
               },
             },
             required: ['prompt'],
@@ -241,9 +229,6 @@ The server **does NOT automatically inject 'Your work folder is...'** into your 
           }
 
           finalCommandArgs = [...baseCommandArgs];
-          if (args.options?.tools) {
-            finalCommandArgs.push('--tools', args.options.tools.join(','));
-          }
           finalCommandArgs.push('-p', claudePrompt);
 
         } else {

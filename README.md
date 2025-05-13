@@ -181,15 +181,10 @@ Once installed and connected to an MCP client, you can invoke the tools using th
 {
   "tool_name": "code",
   "params": {
-    "prompt": "Your prompt to Claude Code here",
-    "options": {
-      "tools": ["Bash", "Read", "Write"]
-    }
+    "prompt": "Your prompt to Claude Code here"
   }
 }
 ```
-
-If no tools are specified, the server enables common tools by default.
 
 #### Prompting Best Practices
 The more detailed, clear, and well-structured your prompt, the better Claude can understand and execute your intent. For complex tasks, breaking them down into numbered steps within the prompt is highly effective.
@@ -237,26 +232,36 @@ Here's a multi-step task:
     - 
       ```
       "Your work folder is /path/to/project
-      
+
       The file 'src/utils/parser.js' has syntax errors after a recent complex edit that broke its structure. Please analyze it, identify the syntax errors, and correct the file to make it valid JavaScript again, ensuring the original logic is preserved as much as possible."
       ```
+
+8.  **Interacting with GitHub (e.g., Creating a Pull Request):**
+    - 
+      ```
+      "Your work folder is /Users/steipete/my_project
+
+      Create a GitHub Pull Request in the repository 'owner/repo' from the 'feature-branch' to the 'main' branch. Title: 'feat: Implement new login flow'. Body: 'This PR adds a new and improved login experience for users.'"
+      ```
+
+9.  **Interacting with GitHub (e.g., Checking PR CI Status):**
+    - 
+      ```
+      "Your work folder is /Users/steipete/my_project
+
+      Check the status of CI checks for Pull Request #42 in the GitHub repository 'owner/repo'. Report if they have passed, failed, or are still running."
+      ```
+
+**Prompting Best Practices:** The more detailed, clear, and well-structured your prompt, the better Claude can understand and execute your intent. For complex tasks, breaking them down into numbered steps within the prompt is highly effective.
 
 ## Tool Descriptions
 
 The server provides one tool:
 
 1. **Tool name**: `code`
-   - **Description**: "**Highly Versatile & Powerful:** Executes a given prompt directly with the Claude Code CLI, bypassing ALL permission checks (`--dangerously-skip-permissions`). This tool is **not limited to simple commands; it can orchestrate complex, multi-step workflows** based on a single, detailed natural language prompt. This includes, but is not limited to:
-    - Advanced code generation, analysis, and refactoring.
-    - Performing web searches and summarizing content.
-    - Executing arbitrary terminal commands (e.g., opening applications, URLs, or files).
-    - **Sophisticated file system operations:** such as identifying, copying, and moving files (even from outside the immediate project workspace, like the user's Desktop, if precise paths are provided or can be reasonably inferred from the prompt).
-    - **Comprehensive Git workflows:** including staging specific files, committing with detailed messages, and pushing to remote repositories.
-    - **Automated file modifications:** like updating READMEs, configuration files, or source code based on instructions.
-Essentially, if you can describe a sequence of operations clearly, this tool can attempt to execute it. **Do not hesitate to use this tool for ambitious, multi-step tasks, even if they seem complex.** Best results are achieved with well-structured, detailed prompts. The server **does NOT automatically inject 'Your work folder is...'** context. If the `prompt` requires specific CWD context (for file operations, relative paths, git commands, etc.), the **`prompt` itself MUST explicitly start with 'Your work folder is /path/to/your/project_root'.** Claude executes within the server's CWD, so relative paths in prompts without explicit CWD context will resolve against the server's CWD. Using absolute paths in prompts is often safest if not providing explicit CWD context. Refer to the 'Example: Complex Multi-step Task' below for a concrete demonstration of its capabilities. `options.tools` can be used to specify internal Claude tools (e.g., `Bash`, `Read`, `Write`); common tools are enabled by default if this is omitted."
+   - **Description**: "Executes a complex **prompt** directly using the Claude Code CLI, bypassing its internal permission checks (`--dangerously-skip-permissions`). This leverages Claude's ability to understand the prompt, reason about the task, and utilize its **internal tools** (like web search, file reading/writing, and bash execution) to achieve the goal. Ideal for complex code generation, analysis, refactoring, running build/test/lint commands (e.g., `npm test`, `pytest`), managing version control (e.g., `git status`, `git commit`), executing multi-step workflows (e.g., '''search for library updates and apply them'''), or performing other tasks requiring integrated reasoning and execution based on a single natural language instruction. Essentially, if you can describe a sequence of operations clearly, this tool can attempt to execute it. **Do not hesitate to use this tool for ambitious, multi-step tasks, even if they seem complex.** Best results are achieved with well-structured, detailed prompts. The server **does NOT automatically inject 'Your work folder is...'** context. If the `prompt` requires specific CWD context (for file operations, relative paths, git commands, etc.), the **`prompt` itself MUST explicitly start with 'Your work folder is /path/to/your/project_root'.** Claude executes within the server's CWD, so relative paths in prompts without explicit CWD context will resolve against the server's CWD. Using absolute paths in prompts is often safest if not providing explicit CWD context. Refer to the 'Example: Complex Multi-step Task' below for a concrete demonstration of its capabilities."
    - **Parameters**:
      - `prompt` (required): The prompt to send to Claude Code
-     - `options.tools` (optional): Array of specific tools to enable
    - **Implementation**: Uses `claude --dangerously-skip-permissions` (invoked via `child_process.spawn`) to bypass all permission checks. The server locates the Claude CLI by first checking the `CLAUDE_CLI_PATH` environment variable, then looking in `~/.claude/local/claude`, and finally falling back to `claude` in the system PATH.
 
 ## Example Screenshots
