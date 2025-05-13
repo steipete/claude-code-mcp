@@ -17,45 +17,52 @@ import packageJson from '../package.json' with { type: 'json' }; // Import packa
 // Define debugMode globally using const
 const debugMode = process.env.MCP_CLAUDE_DEBUG === 'true';
 
+// Dedicated debug logging function
+function debugLog(message?: any, ...optionalParams: any[]): void {
+  if (debugMode) {
+    console.error(message, ...optionalParams);
+  }
+}
+
 /**
  * Determine the Claude CLI command/path.
  * 1. Checks CLAUDE_CLI_PATH environment variable.
  * 2. Checks for Claude CLI at ~/.claude/local/claude.
  * 3. Defaults to 'claude' if not found, relying on spawn() to perform PATH lookup.
  */
-function findClaudeCli(debugMode: boolean): string {
+function findClaudeCli(): string { // Removed debugMode parameter as it's now globally accessible
   // 1. Check environment variable first
-  if (debugMode) console.error('[Debug] Checking for CLAUDE_CLI_PATH environment variable...');
+  debugLog('[Debug] Checking for CLAUDE_CLI_PATH environment variable...');
   const envPath = process.env.CLAUDE_CLI_PATH;
 
   if (envPath) {
-    if (debugMode) console.error(`[Debug] CLAUDE_CLI_PATH is set to: "${envPath}".`);
+    debugLog(`[Debug] CLAUDE_CLI_PATH is set to: "${envPath}".`);
     if (existsSync(envPath)) {
-      if (debugMode) console.error(`[Debug] Found Claude CLI via CLAUDE_CLI_PATH: "${envPath}". Using this path.`);
+      debugLog(`[Debug] Found Claude CLI via CLAUDE_CLI_PATH: "${envPath}". Using this path.`);
       return envPath;
     }
     // If existsSync(envPath) was false, we reach here.
-    if (debugMode) console.error(`[Debug] CLAUDE_CLI_PATH "${envPath}" was set, but the file does not exist. Checking default user path next.`);
+    debugLog(`[Debug] CLAUDE_CLI_PATH "${envPath}" was set, but the file does not exist. Checking default user path next.`);
   } else {
-    if (debugMode) console.error('[Debug] CLAUDE_CLI_PATH environment variable is not set. Checking default user path next.');
+    debugLog('[Debug] CLAUDE_CLI_PATH environment variable is not set. Checking default user path next.');
   }
 
   // 2. Check default user path: ~/.claude/local/claude
-  if (debugMode) console.error('[Debug] Checking for Claude CLI at default user path (~/.claude/local/claude)...');
+  debugLog('[Debug] Checking for Claude CLI at default user path (~/.claude/local/claude)...');
   try {
     const userPath = join(homedir(), '.claude', 'local', 'claude');
     if (existsSync(userPath)) {
-      if (debugMode) console.error(`[Debug] Found Claude CLI at default user path: ${userPath}`);
+      debugLog(`[Debug] Found Claude CLI at default user path: ${userPath}`);
       return userPath;
     }
     // If not returned, it means userPath does not exist, so log it.
-    if (debugMode) console.error(`[Debug] Claude CLI not found at default user path: ${userPath}.`);
+    debugLog(`[Debug] Claude CLI not found at default user path: ${userPath}.`);
   } catch (err) {
-    if (debugMode) console.error(`[Debug] Error checking default user path: ${err instanceof Error ? err.message : String(err)}`);
+    debugLog(`[Debug] Error checking default user path: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // 3. Default to 'claude' command name
-  if (debugMode) console.error('[Debug] CLAUDE_CLI_PATH not set or invalid, and not found at default user path. Defaulting to "claude" command name, relying on spawn/PATH lookup.');
+  debugLog('[Debug] CLAUDE_CLI_PATH not set or invalid, and not found at default user path. Defaulting to "claude" command name, relying on spawn/PATH lookup.');
   console.warn('[Warning] Claude CLI not found via CLAUDE_CLI_PATH or at ~/.claude/local/claude. Falling back to "claude" in PATH. Ensure it is installed and accessible.');
   return 'claude'; // Return base command name
 }
@@ -70,9 +77,7 @@ interface ClaudeCodeArgs {
 // Ensure spawnAsync is defined correctly *before* the class
 async function spawnAsync(command: string, args: string[], options?: { timeout?: number, cwd?: string }): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
-    if (debugMode) {
-      console.error(`[Spawn] Running command: ${command} ${args.join(' ')}`);
-    }
+    debugLog(`[Spawn] Running command: ${command} ${args.join(' ')}`);
     const process = spawn(command, args, {
       shell: false, // Keep shell false
       timeout: options?.timeout,
@@ -86,20 +91,18 @@ async function spawnAsync(command: string, args: string[], options?: { timeout?:
     process.stdout.on('data', (data) => { stdout += data.toString(); });
     process.stderr.on('data', (data) => {
       stderr += data.toString();
-      if (debugMode) { console.error(`[Spawn Stderr Chunk] ${data.toString()}`); }
+      debugLog(`[Spawn Stderr Chunk] ${data.toString()}`);
     });
 
     process.on('error', (error) => {
-      if (debugMode) { console.error(`[Spawn Error Event] ${error.message}`); }
+      debugLog(`[Spawn Error Event] ${error.message}`);
       reject(new Error(`Spawn error: ${error.message}\nStderr: ${stderr.trim()}`));
     });
 
     process.on('close', (code) => {
-      if (debugMode) {
-        console.error(`[Spawn Close] Exit code: ${code}`);
-        console.error(`[Spawn Stderr Full] ${stderr.trim()}`);
-        console.error(`[Spawn Stdout Full] ${stdout.trim()}`);
-      }
+      debugLog(`[Spawn Close] Exit code: ${code}`);
+      debugLog(`[Spawn Stderr Full] ${stderr.trim()}`);
+      debugLog(`[Spawn Stdout Full] ${stdout.trim()}`);
       if (code === 0) {
         resolve({ stdout, stderr });
       } else {
@@ -120,7 +123,7 @@ class ClaudeCodeServer {
 
   constructor() {
     // Use the simplified findClaudeCli function
-    this.claudeCliPath = findClaudeCli(debugMode);
+    this.claudeCliPath = findClaudeCli(); // Removed debugMode argument
     console.error(`[Setup] Using Claude CLI command/path: ${this.claudeCliPath}`);
     this.packageVersion = packageJson.version; // Access version directly
 
@@ -217,13 +220,13 @@ The server **does NOT automatically inject 'Your work folder is...'** into your 
     // Handle tool calls
     this.server.setRequestHandler(CallToolRequestSchema, async (req): Promise<ServerResult> => {
       try {
-        console.error(`[Claude Call] Using claude-code-mcp version: ${this.packageVersion}`);
+        debugLog(`[Claude Call] Using claude-code-mcp version: ${this.packageVersion}`);
 
         const toolName = req.params.name;
 
         if (toolName !== 'code' && toolName !== 'claude') {
-          console.error(`[Error] Tool name mismatch. Expected 'code' or 'claude', got: '${toolName}'`);
-          console.error(`[Error] Tool request processing failed : MCP error -32601: Tool ${toolName} not found`);
+          debugLog(`[Error] Tool name mismatch. Expected 'code' or 'claude', got: '${toolName}'`);
+          debugLog(`[Error] Tool request processing failed : MCP error -32601: Tool ${toolName} not found`);
           throw new McpError(ErrorCode.MethodNotFound, `Tool ${toolName} not found`);
         }
 
@@ -236,9 +239,7 @@ The server **does NOT automatically inject 'Your work folder is...'** into your 
         if (!args || !args.prompt) throw new McpError(ErrorCode.InvalidParams, 'Missing required parameter: prompt');
         claudePrompt = args.prompt;
 
-        if (debugMode) { 
-          console.error(`[Code Tool] Claude Prompt(direct from user): ${claudePrompt}`); 
-        }
+        debugLog(`[Code Tool] Claude Prompt(direct from user): ${claudePrompt}`); 
 
         finalCommandArgs = [...baseCommandArgs];
         finalCommandArgs.push('-p', claudePrompt);
@@ -246,16 +247,14 @@ The server **does NOT automatically inject 'Your work folder is...'** into your 
         // Unified execution logic
         try {
           const { stdout, stderr } = await spawnAsync(this.claudeCliPath, finalCommandArgs, { timeout: 60000 }); // 60-second timeout
-          if (debugMode) {
-            console.error(`Claude CLI stdout(code, plain text):`, stdout); 
-          }
+          debugLog(`Claude CLI stdout(code, plain text):`, stdout); 
           return { content: [{ type: 'text', text: stdout }] };
         } catch (error) {
           let errorMessage = `Unknown error during Claude CLI execution for tool ${toolName}`;
           if (error instanceof Error) {
             errorMessage = error.message;
           }
-          console.error(`[Error] Tool execution failed(${toolName}): ${errorMessage}`);
+          debugLog(`[Error] Tool execution failed(${toolName}): ${errorMessage}`);
           if (error instanceof McpError) {
             throw error; // Re-throw existing McpError
           }
@@ -269,7 +268,7 @@ The server **does NOT automatically inject 'Your work folder is...'** into your 
         }
         // Ensure toolNameForLogging is available or use a generic message
         const toolContext = req.params.name ? `for tool ${req.params.name}` : ''; // Use req.params.name here too
-        console.error(`[Error] Tool request processing failed ${toolContext}: ${errorMessage}`);
+        debugLog(`[Error] Tool request processing failed ${toolContext}: ${errorMessage}`);
         if (error instanceof McpError) {
           throw error; // Re-throw existing McpError
         }
