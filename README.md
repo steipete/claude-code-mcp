@@ -178,6 +178,22 @@ This server, through its unified `code` tool, unlocks a wide range of powerful c
 
 **CRITICAL: Remember to provide Current Working Directory (CWD) context in your prompts for file system or git operations (e.g., `"Your work folder is /path/to/project\n\n...your command..."`).**
 
+### Examples
+
+Here are some visual examples of the server in action:
+
+**Claude Tool Git Example:**
+
+<img src="docs/claude_tool_git_example.png" alt="Claude Tool Git Example">
+
+**Additional Claude Screenshot:**
+
+<img src="docs/additional_claude_screenshot.png" alt="Additional Claude Screenshot">
+
+**Cursor Screenshot:**
+
+<img src="docs/cursor-screenshot.png" alt="Cursor Screenshot">
+
 ## Troubleshooting
 
 - **"Command not found" (claude-code-mcp):** If installed globally, ensure the npm global bin directory is in your system's PATH. If using `npx`, ensure `npx` itself is working.
