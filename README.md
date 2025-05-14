@@ -2,7 +2,7 @@
 
 An MCP (Model Context Protocol) server that allows running Claude Code in one-shot mode with permissions bypassed automatically.
 
-Did you notice that Cursor sometimes struggles with complex, multi-step edits or operations? This server, with its powerful unified `code` tool, aims to make Claude a more direct and capable agent for your coding tasks.
+Did you notice that Cursor sometimes struggles with complex, multi-step edits or operations? This server, with its powerful unified `claude_code` tool, aims to make Claude a more direct and capable agent for your coding tasks.
 
 <img src="docs/screenshot.png" width="600" alt="Screenshot">
 
@@ -36,7 +36,7 @@ The recommended way to use this server is by installing it by using `npx`.
 
 ## Important First-Time Setup: Accepting Permissions
 
-**Before the MCP server can successfully use the `code` tool, you must first run the Claude CLI manually once with the `--dangerously-skip-permissions` flag, login and accept the terms.**
+**Before the MCP server can successfully use the `claude_code` tool, you must first run the Claude CLI manually once with the `--dangerously-skip-permissions` flag, login and accept the terms.**
 
 This is a one-time requirement by the Claude CLI.
 
@@ -81,7 +81,7 @@ Create this file if it doesn't exist. Add or update the configuration for `claud
 
 This server exposes one primary tool:
 
-### `code`
+### `claude_code`
 
 Executes a prompt directly using the Claude Code CLI with `--dangerously-skip-permissions`.
 
@@ -93,7 +93,7 @@ Executes a prompt directly using the Claude Code CLI with `--dangerously-skip-pe
 **Example MCP Request:**
 ```json
 {
-  "toolName": "claude_code:code",
+  "toolName": "claude_code:claude_code",
   "arguments": {
     "prompt": "Refactor the function foo in main.py to be async."
   }
@@ -112,7 +112,7 @@ Here are some visual examples of the server in action:
 
 ## Key Use Cases
 
-This server, through its unified `code` tool, unlocks a wide range of powerful capabilities by giving your AI direct access to the Claude Code CLI. Here are some examples of what you can achieve:
+This server, through its unified `claude_code` tool, unlocks a wide range of powerful capabilities by giving your AI direct access to the Claude Code CLI. Here are some examples of what you can achieve:
 
 1.  **Code Generation, Analysis & Refactoring:**
     -   `"Generate a Python script to parse CSV data and output JSON."`

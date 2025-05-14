@@ -109,9 +109,9 @@ class ClaudeCodeServer {
         this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
             tools: [
                 {
-                    name: 'code',
-                    description: `Claude Code Agent — runs shell/Git/fs commands with full system access.
-  **Always use absolute paths.**
+                    name: 'claude_code',
+                    description: `Claude Code Agent — runs shell/Git/fs commands.
+  Start with: "Your work folder is <ProjectRoot>" and use relative file paths from there.
 
   **What it can do**
 
@@ -136,7 +136,7 @@ class ClaudeCodeServer {
   **Prompt tips**
 
   1. Be explicit & step-by-step for complex tasks.
-  2. For multi-line text, write it to \`/tmp/*.txt\`, use that file, then delete it.
+  2. For multi-line text, write it to a temporary file in the project root, use that file, then delete it.
   3. If you get a timeout, split the task into smaller steps.
         `,
                     inputSchema: {
@@ -158,7 +158,7 @@ class ClaudeCodeServer {
             debugLog('[Debug] Handling CallToolRequest:', args);
             // Correctly access toolName from args.params.name
             const toolName = args.params.name;
-            if (toolName !== 'code') {
+            if (toolName !== 'claude_code') {
                 // ErrorCode.ToolNotFound should be ErrorCode.MethodNotFound as per SDK for tools
                 throw new McpError(ErrorCode.MethodNotFound, `Tool ${toolName} not found`);
             }
@@ -166,7 +166,7 @@ class ClaudeCodeServer {
             // Cast arguments to expected type to access prompt
             const toolArguments = args.params.arguments;
             if (!toolArguments || typeof toolArguments.prompt !== 'string') {
-                throw new McpError(ErrorCode.InvalidParams, 'Missing or invalid required parameter: prompt for code tool');
+                throw new McpError(ErrorCode.InvalidParams, 'Missing or invalid required parameter: prompt for claude_code tool');
             }
             let claudePrompt = toolArguments.prompt; // This is the prompt we will potentially modify
             let determinedCwd = os.homedir(); // Default to home directory

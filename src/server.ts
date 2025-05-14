@@ -140,9 +140,9 @@ class ClaudeCodeServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
         {
-          name: 'code',
-          description: `Claude Code Agent — runs shell/Git/fs commands with full system access.
-  **Always use absolute paths.**
+          name: 'claude_code',
+          description: `Claude Code Agent — runs shell/Git/fs commands.
+  Start with: "Your work folder is <ProjectRoot>" and use relative file paths from there.
 
   **What it can do**
 
@@ -167,7 +167,7 @@ class ClaudeCodeServer {
   **Prompt tips**
 
   1. Be explicit & step-by-step for complex tasks.
-  2. For multi-line text, write it to \`/tmp/*.txt\`, use that file, then delete it.
+  2. For multi-line text, write it to a temporary file in the project root, use that file, then delete it.
   3. If you get a timeout, split the task into smaller steps.
         `,
           inputSchema: {
@@ -192,7 +192,7 @@ class ClaudeCodeServer {
 
       // Correctly access toolName from args.params.name
       const toolName = args.params.name;
-      if (toolName !== 'code') {
+      if (toolName !== 'claude_code') {
         // ErrorCode.ToolNotFound should be ErrorCode.MethodNotFound as per SDK for tools
         throw new McpError(ErrorCode.MethodNotFound, `Tool ${toolName} not found`);
       }
@@ -201,7 +201,7 @@ class ClaudeCodeServer {
       // Cast arguments to expected type to access prompt
       const toolArguments = args.params.arguments as unknown as ClaudeCodeArgs;
       if (!toolArguments || typeof toolArguments.prompt !== 'string') {
-        throw new McpError(ErrorCode.InvalidParams, 'Missing or invalid required parameter: prompt for code tool');
+        throw new McpError(ErrorCode.InvalidParams, 'Missing or invalid required parameter: prompt for claude_code tool');
       }
       let claudePrompt = toolArguments.prompt; // This is the prompt we will potentially modify
 
@@ -244,7 +244,7 @@ class ClaudeCodeServer {
 
       try {
         const { stdout, stderr } = await spawnAsync(this.claudeCliPath, finalCommandArgs, spawnProcessOptions);
-        
+
         debugLog(`Claude CLI stdout (raw): "${stdout}"`);
         if (stderr) {
           debugLog(`Claude CLI stderr (raw): "${stderr}"`);
@@ -257,11 +257,11 @@ class ClaudeCodeServer {
         debugLog('[Error] Error executing Claude CLI:', error);
         let errorMessage = error.message || 'Unknown error';
         // Attempt to include stderr and stdout from the error object if spawnAsync attached them
-        if (error.stderr) { 
+        if (error.stderr) {
           errorMessage += `\nStderr: ${error.stderr}`;
         }
-        if (error.stdout){
-           errorMessage += `\nStdout: ${error.stdout}`;
+        if (error.stdout) {
+          errorMessage += `\nStdout: ${error.stdout}`;
         }
 
         if (error.signal === 'SIGTERM' || (error.message && error.message.includes('ETIMEDOUT')) || (error.code === 'ETIMEDOUT')) {
@@ -277,12 +277,12 @@ class ClaudeCodeServer {
   /**
    * Start the MCP server
    */
-  async run(): Promise < void> {
-  // Revert to original server start logic if listen caused errors
-  const transport = new StdioServerTransport();
-  await this.server.connect(transport);
-  console.error('Claude Code MCP server running on stdio');
-}
+  async run(): Promise<void> {
+    // Revert to original server start logic if listen caused errors
+    const transport = new StdioServerTransport();
+    await this.server.connect(transport);
+    console.error('Claude Code MCP server running on stdio');
+  }
 }
 
 // Create and run the server
