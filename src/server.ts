@@ -63,7 +63,7 @@ async function spawnAsync(command: string, args: string[], options?: { timeout?:
   return new Promise((resolve, reject) => {
     debugLog(`[Spawn] Running command: ${command} ${args.join(' ')}`);
     const process = spawn(command, args, {
-      shell: false, // Keep shell false
+      shell: false, // Reverted to false
       timeout: options?.timeout,
       cwd: options?.cwd,
       stdio: ['ignore', 'pipe', 'pipe']
@@ -78,9 +78,17 @@ async function spawnAsync(command: string, args: string[], options?: { timeout?:
       debugLog(`[Spawn Stderr Chunk] ${data.toString()}`);
     });
 
-    process.on('error', (error) => {
-      debugLog(`[Spawn Error Event] ${error.message}`);
-      reject(new Error(`Spawn error: ${error.message}\nStderr: ${stderr.trim()}`));
+    process.on('error', (error: NodeJS.ErrnoException) => {
+      debugLog(`[Spawn Error Event] Full error object:`, error);
+      let errorMessage = `Spawn error: ${error.message}`;
+      if (error.path) {
+        errorMessage += ` | Path: ${error.path}`;
+      }
+      if (error.syscall) {
+        errorMessage += ` | Syscall: ${error.syscall}`;
+      }
+      errorMessage += `\nStderr: ${stderr.trim()}`;
+      reject(new Error(errorMessage));
     });
 
     process.on('close', (code) => {
@@ -197,57 +205,55 @@ class ClaudeCodeServer {
         throw new McpError(ErrorCode.MethodNotFound, `Tool ${toolName} not found`);
       }
 
-      // Correctly access prompt from args.params.arguments
-      // Cast arguments to expected type to access prompt
-      const toolArguments = args.params.arguments as unknown as ClaudeCodeArgs;
-      if (!toolArguments || typeof toolArguments.prompt !== 'string') {
-        throw new McpError(ErrorCode.InvalidParams, 'Missing or invalid required parameter: prompt for claude_code tool');
-      }
-      let claudePrompt = toolArguments.prompt; // This is the prompt we will potentially modify
+      // Robustly access prompt from args.params.arguments
+      const toolArguments = args.params.arguments;
+      let prompt: string;
 
-      let determinedCwd = os.homedir(); // Default to home directory
-
-      // Regex to find "Your work folder is..." directive
-      const workFolderRegex = /^Your work folder is\s*([^\r\n]+)/im; // Using [^\r\n]+ for broader newline compatibility
-      const workFolderMatch = claudePrompt.match(workFolderRegex);
-
-      if (workFolderMatch && workFolderMatch[1]) {
-        const parsedPath = pathResolve(workFolderMatch[1].trim().replace(/^['"]|['"]$/g, ''));
-        if (path.isAbsolute(parsedPath)) {
-          determinedCwd = parsedPath;
-          // Remove the "Your work folder is..." line from the prompt sent to Claude CLI
-          claudePrompt = claudePrompt.replace(workFolderRegex, '').trim();
-          debugLog(`[Debug] Parsed work folder: ${determinedCwd}. Adjusted prompt for Claude CLI: "${claudePrompt}"`);
-        } else {
-          debugLog(`[Debug] Parsed path "${parsedPath}" from prompt is not absolute. Using default CWD: ${determinedCwd}`);
-        }
+      if (
+        toolArguments &&
+        typeof toolArguments === 'object' &&
+        'prompt' in toolArguments &&
+        typeof toolArguments.prompt === 'string'
+      ) {
+        prompt = toolArguments.prompt;
       } else {
-        debugLog(`[Debug] No "Your work folder is..." directive found in prompt. Using default CWD: ${determinedCwd}`);
+        throw new McpError(ErrorCode.InvalidParams, 'Missing or invalid required parameter: prompt (must be an object with a string "prompt" property) for claude_code tool');
       }
 
-      const spawnProcessOptions = {
-        timeout: executionTimeoutMs,
-        cwd: determinedCwd,
-      };
+      // Extract CWD from prompt if present, default to user's home directory
+      let effectiveCwd = homedir(); // Default CWD
+      const cwdMatch = prompt.match(/^Your work folder is (\S+)/);
+      if (cwdMatch && cwdMatch[1]) {
+        const specifiedCwd = cwdMatch[1];
+        // Resolve the path to ensure it's absolute and normalized
+        const resolvedCwd = pathResolve(specifiedCwd);
+        debugLog(`[Debug] Extracted CWD from prompt: ${specifiedCwd}, Resolved to: ${resolvedCwd}`);
 
-      const finalCommandArgs: string[] = [];
-      finalCommandArgs.push('--dangerously-skip-permissions'); // Flag first
-
-      // Add prompt if it's not empty after potential modification
-      if (claudePrompt && claudePrompt.trim() !== '') {
-        finalCommandArgs.push('-p', claudePrompt);
+        // Security check: Ensure the path is within expected bounds if necessary
+        // For now, we'll trust the resolved path if it exists
+        if (existsSync(resolvedCwd)) {
+          effectiveCwd = resolvedCwd;
+        } else {
+          debugLog(`[Warning] Specified CWD does not exist: ${resolvedCwd}. Using default: ${effectiveCwd}`);
+          // Optionally, could throw an error or notify the user
+        }
       }
-
-      debugLog(`[Debug] Claude CLI command: ${this.claudeCliPath}`);
-      debugLog('[Debug] Claude CLI final arguments:', finalCommandArgs.join(' '));
-      debugLog('[Debug] Claude CLI CWD:', spawnProcessOptions.cwd);
 
       try {
-        const { stdout, stderr } = await spawnAsync(this.claudeCliPath, finalCommandArgs, spawnProcessOptions);
+        debugLog(`[Debug] Attempting to execute Claude CLI with prompt: "${prompt}" in CWD: "${effectiveCwd}"`);
 
-        debugLog(`Claude CLI stdout (raw): "${stdout}"`);
+        const claudeProcessArgs = [this.claudeCliPath, '--dangerously-skip-permissions', '-p', prompt];
+        debugLog(`[Debug] Invoking /bin/bash with args: ${claudeProcessArgs.join(' ')}`);
+
+        const { stdout, stderr } = await spawnAsync(
+          '/bin/bash', // Explicitly use /bin/bash as the command
+          claudeProcessArgs, // Pass the script path as the first argument to bash
+          { timeout: executionTimeoutMs, cwd: effectiveCwd }
+        );
+
+        debugLog('[Debug] Claude CLI stdout:', stdout.trim());
         if (stderr) {
-          debugLog(`Claude CLI stderr (raw): "${stderr}"`);
+          debugLog('[Debug] Claude CLI stderr:', stderr.trim());
         }
 
         // Return stdout content, even if there was stderr, as claude-cli might output main result to stdout.
