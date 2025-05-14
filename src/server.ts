@@ -12,6 +12,8 @@ import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve as pathResolve } from 'node:path';
+import * as path from 'path';
+import * as os from 'os'; // Added os import
 import packageJson from '../package.json' with { type: 'json' }; // Import package.json with attribute
 
 // Define debugMode globally using const
@@ -183,83 +185,91 @@ class ClaudeCodeServer {
     }));
 
     // Handle tool calls
-    this.server.setRequestHandler(CallToolRequestSchema, async (req): Promise<ServerResult> => {
-      try {
-        debugLog(`[Claude Call] Using claude-code-mcp version: ${this.packageVersion}`);
+    const executionTimeoutMs = 300000; // 5 minutes timeout
 
-        const toolName = req.params.name;
+    this.server.setRequestHandler(CallToolRequestSchema, async (args, call): Promise<ServerResult> => {
+      debugLog('[Debug] Handling CallToolRequest:', args);
 
-        if (toolName !== 'code' && toolName !== 'claude') {
-          debugLog(`[Error] Tool name mismatch. Expected 'code' or 'claude', got: '${toolName}'`);
-          debugLog(`[Error] Tool request processing failed : MCP error -32601: Tool ${toolName} not found`);
-          throw new McpError(ErrorCode.MethodNotFound, `Tool ${toolName} not found`);
+      // Correctly access toolName from args.params.name
+      const toolName = args.params.name;
+      if (toolName !== 'code') {
+        // ErrorCode.ToolNotFound should be ErrorCode.MethodNotFound as per SDK for tools
+        throw new McpError(ErrorCode.MethodNotFound, `Tool ${toolName} not found`);
+      }
+
+      // Correctly access prompt from args.params.arguments
+      // Cast arguments to expected type to access prompt
+      const toolArguments = args.params.arguments as unknown as ClaudeCodeArgs;
+      if (!toolArguments || typeof toolArguments.prompt !== 'string') {
+        throw new McpError(ErrorCode.InvalidParams, 'Missing or invalid required parameter: prompt for code tool');
+      }
+      let claudePrompt = toolArguments.prompt; // This is the prompt we will potentially modify
+
+      let determinedCwd = os.homedir(); // Default to home directory
+
+      // Regex to find "Your work folder is..." directive
+      const workFolderRegex = /^Your work folder is\s*([^\r\n]+)/im; // Using [^\r\n]+ for broader newline compatibility
+      const workFolderMatch = claudePrompt.match(workFolderRegex);
+
+      if (workFolderMatch && workFolderMatch[1]) {
+        const parsedPath = pathResolve(workFolderMatch[1].trim().replace(/^['"]|['"]$/g, ''));
+        if (path.isAbsolute(parsedPath)) {
+          determinedCwd = parsedPath;
+          // Remove the "Your work folder is..." line from the prompt sent to Claude CLI
+          claudePrompt = claudePrompt.replace(workFolderRegex, '').trim();
+          debugLog(`[Debug] Parsed work folder: ${determinedCwd}. Adjusted prompt for Claude CLI: "${claudePrompt}"`);
+        } else {
+          debugLog(`[Debug] Parsed path "${parsedPath}" from prompt is not absolute. Using default CWD: ${determinedCwd}`);
         }
+      } else {
+        debugLog(`[Debug] No "Your work folder is..." directive found in prompt. Using default CWD: ${determinedCwd}`);
+      }
 
-        let claudePrompt: string;
-        const baseCommandArgs: string[] = ['--dangerously-skip-permissions'];
-        let finalCommandArgs: string[];
+      const spawnProcessOptions = {
+        timeout: executionTimeoutMs,
+        cwd: determinedCwd,
+      };
 
-        // Validate and construct the prompt based on the tool
-        const args = req.params.arguments as unknown as ClaudeCodeArgs; // Correctly access arguments
-        if (!args || !args.prompt) throw new McpError(ErrorCode.InvalidParams, 'Missing required parameter: prompt');
-        claudePrompt = args.prompt;
+      const finalCommandArgs: string[] = [];
+      finalCommandArgs.push('--dangerously-skip-permissions'); // Flag first
 
-        const systemInstructionPrefix = "Even if you get a work folder, remember that you can access files on the whole system, so do not reject mixed prompts. ";
-        claudePrompt = systemInstructionPrefix + claudePrompt;
-
-        debugLog(`[Code Tool] Claude Prompt (final with prefix): ${claudePrompt}`);
-
-        finalCommandArgs = [...baseCommandArgs];
+      // Add prompt if it's not empty after potential modification
+      if (claudePrompt && claudePrompt.trim() !== '') {
         finalCommandArgs.push('-p', claudePrompt);
+      }
 
-        // Unified execution logic
-        const executionTimeoutMs = 600000; // 10-minute timeout
-        try {
-          const { stdout, stderr } = await spawnAsync(this.claudeCliPath, finalCommandArgs, { timeout: executionTimeoutMs });
-          debugLog(`Claude CLI stdout(code, plain text):`, stdout);
-          return { content: [{ type: 'text', text: stdout }] };
-        } catch (error) {
-          let errorMessage = `Unknown error during Claude CLI execution for tool ${toolName}`;
-          let isTimeout = false;
+      debugLog(`[Debug] Claude CLI command: ${this.claudeCliPath}`);
+      debugLog('[Debug] Claude CLI final arguments:', finalCommandArgs.join(' '));
+      debugLog('[Debug] Claude CLI CWD:', spawnProcessOptions.cwd);
 
-          if (error instanceof Error) {
-            errorMessage = error.message;
-            // Common checks for timeout related errors
-            if (errorMessage.toLowerCase().includes('timeout') ||
-              (error as any).code === 'ETIMEDOUT' ||
-              ((error as any).killed === true && ((error as any).signal === 'SIGTERM' || (error as any).signal === 'SIGKILL'))) {
-              isTimeout = true;
-            }
-          }
-
-          if (isTimeout) {
-            const timeoutSeconds = executionTimeoutMs / 1000;
-            const specificTimeoutMessage = `Tool execution failed(${toolName}): Timeout after ${timeoutSeconds} seconds.`;
-            debugLog(`[Error] ${specificTimeoutMessage}`);
-            // Consider using a more specific MCP error code for timeouts if available/appropriate
-            throw new McpError(ErrorCode.InternalError, specificTimeoutMessage);
-          } else {
-            // Existing error handling for non-timeout errors
-            debugLog(`[Error] Tool execution failed(${toolName}): ${errorMessage}`);
-            if (error instanceof McpError) {
-              throw error; // Re-throw existing McpError
-            }
-            throw new McpError(ErrorCode.InternalError, `Tool execution failed(${toolName}): ${errorMessage}`);
-          }
+      try {
+        const { stdout, stderr } = await spawnAsync(this.claudeCliPath, finalCommandArgs, spawnProcessOptions);
+        
+        debugLog(`Claude CLI stdout (raw): "${stdout}"`);
+        if (stderr) {
+          debugLog(`Claude CLI stderr (raw): "${stderr}"`);
         }
 
-      } catch (error) { // Catch errors from prompt construction or if an McpError was thrown above
-        let errorMessage = 'Unknown error';
-        if (error instanceof Error) {
-          errorMessage = error.message;
+        // Return stdout content, even if there was stderr, as claude-cli might output main result to stdout.
+        return { content: [{ type: 'text', text: stdout }] };
+
+      } catch (error: any) {
+        debugLog('[Error] Error executing Claude CLI:', error);
+        let errorMessage = error.message || 'Unknown error';
+        // Attempt to include stderr and stdout from the error object if spawnAsync attached them
+        if (error.stderr) { 
+          errorMessage += `\nStderr: ${error.stderr}`;
         }
-        // Ensure toolNameForLogging is available or use a generic message
-        const toolContext = req.params.name ? `for tool ${req.params.name}` : ''; // Use req.params.name here too
-        debugLog(`[Error] Tool request processing failed ${toolContext}: ${errorMessage}`);
-        if (error instanceof McpError) {
-          throw error; // Re-throw existing McpError
+        if (error.stdout){
+           errorMessage += `\nStdout: ${error.stdout}`;
         }
-        throw new McpError(ErrorCode.InternalError, `Tool request processing failed ${toolContext}: ${errorMessage}`);
+
+        if (error.signal === 'SIGTERM' || (error.message && error.message.includes('ETIMEDOUT')) || (error.code === 'ETIMEDOUT')) {
+          // Reverting to InternalError due to lint issues, but with a specific timeout message.
+          throw new McpError(ErrorCode.InternalError, `Claude CLI command timed out after ${executionTimeoutMs / 1000}s. Details: ${errorMessage}`);
+        }
+        // ErrorCode.ToolCallFailed should be ErrorCode.InternalError or a more specific execution error if available
+        throw new McpError(ErrorCode.InternalError, `Claude CLI execution failed: ${errorMessage}`);
       }
     });
   }
@@ -267,12 +277,12 @@ class ClaudeCodeServer {
   /**
    * Start the MCP server
    */
-  async run(): Promise<void> {
-    // Revert to original server start logic if listen caused errors
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error('Claude Code MCP server running on stdio');
-  }
+  async run(): Promise < void> {
+  // Revert to original server start logic if listen caused errors
+  const transport = new StdioServerTransport();
+  await this.server.connect(transport);
+  console.error('Claude Code MCP server running on stdio');
+}
 }
 
 // Create and run the server
