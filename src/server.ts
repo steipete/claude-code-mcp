@@ -198,7 +198,7 @@ class ClaudeCodeServer {
     }));
 
     // Handle tool calls
-    const executionTimeoutMs = 300000; // 5 minutes timeout
+    const executionTimeoutMs = 1800000; // 30 minutes timeout
 
     this.server.setRequestHandler(CallToolRequestSchema, async (args, call): Promise<ServerResult> => {
       debugLog('[Debug] Handling CallToolRequest:', args);
