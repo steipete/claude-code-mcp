@@ -147,7 +147,7 @@ class ClaudeCodeServer {
   • Code work  Generate / analyse / refactor / fix
     └─ e.g. "Generate Python to parse CSV→JSON", "Find bugs in my_script.py"
 
-  • File ops  Create, read, edit, move, copy, delete
+  • File ops  Create, read, (fuzzy) edit, move, copy, delete.
     └─ "Create /workspace/config.yml …", "Edit /workspace/css/style.css → add h2{color:navy}"
 
   • Git  Stage ▸ commit ▸ push ▸ tag
@@ -166,6 +166,7 @@ class ClaudeCodeServer {
 
   1. Be explicit & step-by-step for complex tasks.
   2. For multi-line text, write it to \`/tmp/*.txt\`, use that file, then delete it.
+  3. If you get a timeout, split the task into smaller steps.
         `,
           inputSchema: {
             type: 'object',
@@ -203,7 +204,10 @@ class ClaudeCodeServer {
         if (!args || !args.prompt) throw new McpError(ErrorCode.InvalidParams, 'Missing required parameter: prompt');
         claudePrompt = args.prompt;
 
-        debugLog(`[Code Tool] Claude Prompt(direct from user): ${claudePrompt}`);
+        const systemInstructionPrefix = "Even if you get a work folder, remember that you can access files on the whole system, so do not reject mixed prompts. ";
+        claudePrompt = systemInstructionPrefix + claudePrompt;
+
+        debugLog(`[Code Tool] Claude Prompt (final with prefix): ${claudePrompt}`);
 
         finalCommandArgs = [...baseCommandArgs];
         finalCommandArgs.push('-p', claudePrompt);
@@ -221,9 +225,9 @@ class ClaudeCodeServer {
           if (error instanceof Error) {
             errorMessage = error.message;
             // Common checks for timeout related errors
-            if (errorMessage.toLowerCase().includes('timeout') || 
-                (error as any).code === 'ETIMEDOUT' || 
-                ((error as any).killed === true && ((error as any).signal === 'SIGTERM' || (error as any).signal === 'SIGKILL'))) {
+            if (errorMessage.toLowerCase().includes('timeout') ||
+              (error as any).code === 'ETIMEDOUT' ||
+              ((error as any).killed === true && ((error as any).signal === 'SIGTERM' || (error as any).signal === 'SIGKILL'))) {
               isTimeout = true;
             }
           }
