@@ -1,10 +1,12 @@
 # Claude Code MCP Server
 
+![Agents in Agents Meme](assets/agents_in_agents_meme.jpg)
+
 An MCP (Model Context Protocol) server that allows running Claude Code in one-shot mode with permissions bypassed automatically.
 
 Did you notice that Cursor sometimes struggles with complex, multi-step edits or operations? This server, with its powerful unified `claude_code` tool, aims to make Claude a more direct and capable agent for your coding tasks.
 
-<img src="docs/screenshot.png" width="600" alt="Screenshot">
+<img src="assets/screenshot.png" width="600" alt="Screenshot">
 
 ## Overview
 
@@ -14,6 +16,14 @@ This MCP server provides one tool that can be used by LLMs to interact with Clau
 - Execute Claude Code with any prompt without permission interruptions
 - Access file editing capabilities directly
 - Enable specific tools by default
+
+## Benefits
+
+- Claude/Windsurf often have trouble editing files. Claude Code is better and faster at it.
+- Multiple commands can be queued instead of direct execution. This saves context space so more important stuff is retained longer, fewer compacts happen.
+- File ops, git, or other operations don't need costy models. Claude Code is pretty cost effective if you sign up for Antropic Max. You can use Gemini or o3 in Max mode and save costs with offloading tasks to cheaper models.
+- Claude has wider system access and can do things that Cursor/Windsurf can't do (or believe they can't), so whenever they are stuck just ask them "use claude code" and it will usually un-stuck them.
+- Agents in Agents rules.
 
 ## Prerequisites
 
@@ -104,11 +114,23 @@ Executes a prompt directly using the Claude Code CLI with `--dangerously-skip-pe
 
 Here are some visual examples of the server in action:
 
-<img src="docs/claude_tool_git_example.png" alt="Claude Tool Git Example">
+<img src="assets/claude_tool_git_example.png" alt="Claude Tool Git Example">
 
-<img src="docs/additional_claude_screenshot.png" alt="Additional Claude Screenshot">
+<img src="assets/additional_claude_screenshot.png" alt="Additional Claude Screenshot">
 
-<img src="docs/cursor-screenshot.png" alt="Cursor Screenshot">
+<img src="assets/cursor-screenshot.png" alt="Cursor Screenshot">
+
+### Fixing ESLint Setup
+
+Here's an example of using the Claude Code MCP tool to interactively fix an ESLint setup by deleting old configuration files and creating a new one:
+
+![ESLint file operations example](assets/eslint_example.png)
+
+### Listing Files Example
+
+Here's an example of the Claude Code tool listing files in a directory:
+
+![File listing example](assets/file_list_example.png)
 
 ## Key Use Cases
 
