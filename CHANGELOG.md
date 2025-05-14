@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.6.0] - 2025-05-14
+
+### Added
+- Specific error message "Timeout after X seconds" for Claude CLI execution timeouts, improving debuggability.
+
+### Changed
+- Increased default Claude CLI execution timeout to 10 minutes.
+- Updated the Claude tool description within the MCP server for enhanced clarity and better formatting.
+
+### Optimized
+- Claude CLI path detection now prioritizes local user builds (`~/.claude/local/claude`) which can lead to faster server startup if a local build is present.
+
 ## [1.5.0] - 2025-05-13
 
 ### Fixed
