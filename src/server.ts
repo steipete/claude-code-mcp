@@ -56,6 +56,7 @@ function findClaudeCli(): string {
  */
 interface ClaudeCodeArgs {
   prompt: string;
+  workFolder?: string;
 }
 
 // Ensure spawnAsync is defined correctly *before* the class
@@ -150,7 +151,7 @@ class ClaudeCodeServer {
         {
           name: 'claude_code',
           description: `Claude Code Agent — runs shell/Git/fs commands.
-  Start with: "Your work folder is <ProjectRoot>" and use relative file paths from there.
+  Use the 'workFolder' parameter to specify the execution directory if needed.
 
   **What it can do**
 
@@ -184,6 +185,10 @@ class ClaudeCodeServer {
               prompt: {
                 type: 'string',
                 description: 'The detailed natural language prompt for Claude to execute.',
+              },
+              workFolder: {
+                type: 'string',
+                description: 'Optional. The working directory for the Claude CLI execution. Defaults to the user\'s home directory if not specified.',
               },
             },
             required: ['prompt'],
@@ -220,23 +225,23 @@ class ClaudeCodeServer {
         throw new McpError(ErrorCode.InvalidParams, 'Missing or invalid required parameter: prompt (must be an object with a string "prompt" property) for claude_code tool');
       }
 
-      // Extract CWD from prompt if present, default to user's home directory
-      let effectiveCwd = homedir(); // Default CWD
-      const cwdMatch = prompt.match(/^Your work folder is (\S+)/);
-      if (cwdMatch && cwdMatch[1]) {
-        const specifiedCwd = cwdMatch[1];
-        // Resolve the path to ensure it's absolute and normalized
-        const resolvedCwd = pathResolve(specifiedCwd);
-        debugLog(`[Debug] Extracted CWD from prompt: ${specifiedCwd}, Resolved to: ${resolvedCwd}`);
-
-        // Security check: Ensure the path is within expected bounds if necessary
-        // For now, we'll trust the resolved path if it exists
+      // Determine the working directory
+      let effectiveCwd = homedir(); // Default CWD is user's home directory
+      
+      // Check if workFolder is provided in the tool arguments
+      if (toolArguments.workFolder && typeof toolArguments.workFolder === 'string') {
+        const resolvedCwd = pathResolve(toolArguments.workFolder);
+        debugLog(`[Debug] Specified workFolder: ${toolArguments.workFolder}, Resolved to: ${resolvedCwd}`);
+        
+        // Check if the resolved path exists
         if (existsSync(resolvedCwd)) {
           effectiveCwd = resolvedCwd;
+          debugLog(`[Debug] Using workFolder as CWD: ${effectiveCwd}`);
         } else {
-          debugLog(`[Warning] Specified CWD does not exist: ${resolvedCwd}. Using default: ${effectiveCwd}`);
-          // Optionally, could throw an error or notify the user
+          debugLog(`[Warning] Specified workFolder does not exist: ${resolvedCwd}. Using default: ${effectiveCwd}`);
         }
+      } else {
+        debugLog(`[Debug] No workFolder provided, using default CWD: ${effectiveCwd}`);
       }
 
       try {
