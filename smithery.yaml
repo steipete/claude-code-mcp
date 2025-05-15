@@ -1,0 +1,24 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required: []
+    properties:
+      claudeCliPath:
+        type: string
+        default: ""
+        description: Absolute path to the Claude CLI executable
+      debug:
+        type: boolean
+        default: false
+        description: Enable verbose debug logging
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => ({command: 'node', args: ['dist/server.js'], env: Object.assign({}, config.claudeCliPath ? {CLAUDE_CLI_PATH: config.claudeCliPath} : {}, {'MCP_CLAUDE_DEBUG': String(config.debug)})})
+  exampleConfig:
+    claudeCliPath: /usr/local/bin/claude
+    debug: false
