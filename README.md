@@ -169,6 +169,16 @@ This server, through its unified `claude_code` tool, unlocks a wide range of pow
 9.  **Interacting with GitHub (e.g., Checking PR CI Status):**
     -   `"Your work folder is /Users/steipete/my_project\n\nCheck the status of CI checks for Pull Request #42 in the GitHub repository 'owner/repo'. Report if they have passed, failed, or are still running."`
 
+### Correcting GitHub Actions Workflow
+
+<img src="assets/github_actions_fix_example.png" alt="GitHub Actions workflow fix example" width="50%">
+
+### Complex Multi-Step Operations
+
+This example illustrates `claude_code` handling a more complex, multi-step task, such as preparing a release by creating a branch, updating multiple files (`package.json`, `CHANGELOG.md`), committing changes, and initiating a pull request, all within a single, coherent operation.
+
+<img src="assets/claude_code_multistep_example.png" alt="Claude Code multi-step example" width="50%">
+
 **CRITICAL: Remember to provide Current Working Directory (CWD) context in your prompts for file system or git operations (e.g., `"Your work folder is /path/to/project\n\n...your command..."`).**
 
 ## Troubleshooting
