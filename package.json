@@ -1,6 +1,6 @@
 {
   "name": "@steipete/claude-code-mcp",
-  "version": "1.9.2",
+  "version": "1.9.3",
   "description": "Simple MCP server for Claude Code one-shot execution",
   "author": "Peter Steinberger",
   "license": "MIT",

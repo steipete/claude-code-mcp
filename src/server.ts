@@ -151,32 +151,30 @@ class ClaudeCodeServer {
         {
           name: 'claude_code',
           description: `
-  **What it can do**
+• File ops: Create, read, (fuzzy) edit, move, copy, delete, list files
+    └─ "Create /workspace/config.yml …", "Edit /workspace/css/style.css → add h2{color:navy}, "Remove all occurences of X"
 
-  • Code work  Generate / analyse / refactor / fix
+• Code: Generate / analyse / refactor / fix
     └─ e.g. "Generate Python to parse CSV→JSON", "Find bugs in my_script.py"
 
-  • File ops  Create, read, (fuzzy) edit, move, copy, delete.
-    └─ "Create /workspace/config.yml …", "Edit /workspace/css/style.css → add h2{color:navy}"
+• Git: Stage ▸ commit ▸ push ▸ tag ▸ PR
+    └─ "Commit '/workspace/src/main.java' with 'feat: user auth' to develop."
 
-  • Git  Stage ▸ commit ▸ push ▸ tag
-    └─ "Commit '/workspace/src/main.java' with 'feat: user auth' to develop"
-
-  • Terminal  Run any CLI cmd or open URLs
+• Terminal: Run any CLI cmd or open URLs
     └─ "npm run build", "Open https://developer.mozilla.org"
 
-  • Web search + summarise content on-the-fly
+• Web search + summarise content on-the-fly
 
-  • Multi-step workflows  (Version bumps, changelog updates, release tagging, etc.)
+• Multi-step workflows  (Version bumps, changelog updates, release tagging, etc.)
 
-  • GitHub integration  Create PRs, check CI status
+• GitHub integration  Create PRs, check CI status
 
-  **Prompt tips**
+**Prompt tips**
 
-  1. Be explicit & step-by-step for complex tasks.
-  2. For multi-line text, write it to a temporary file in the project root, use that file, then delete it.
-  3. If you get a timeout, split the task into smaller steps.
-  4. **Seeking a second opinion/analysis**: If you're stuck or want advice, you can ask claude code to analyze a problem and suggest solutions. Clearly state in your prompt that you are looking for analysis only and no actual file modifications should be made.
+1. Be concise, explicit & step-by-step for complex tasks. No need for niceties, this is a tool to get things done.
+2. For multi-line text, write it to a temporary file in the project root, use that file, then delete it.
+3. If you get a timeout, split the task into smaller steps.
+4. **Seeking a second opinion/analysis**: If you're stuck or want advice, you can ask claude code to analyze a problem and suggest solutions. Clearly state in your prompt that you are looking for analysis only and no actual file modifications should be made.
         `,
           inputSchema: {
             type: 'object',
@@ -187,7 +185,7 @@ class ClaudeCodeServer {
               },
               workFolder: {
                 type: 'string',
-                description: 'Optional. The working directory for the Claude CLI execution. Defaults to the user\'s home directory if not specified.',
+                description: 'Mandatory when using file operations or referencing any file. The working directory for the Claude CLI execution.',
               },
             },
             required: ['prompt'],
