@@ -132,6 +132,12 @@ Here's an example of the Claude Code tool listing files in a directory:
 
 <img src="assets/file_list_example.png" alt="File listing example" width="50%">
 
+### GitHub Actions Workflow Fix Example
+
+Claude Code can help you make precise corrections to GitHub Actions workflow files:
+
+<img src="assets/github_actions_fix_example.png" alt="GitHub Actions fix example" width="50%">
+
 ## Key Use Cases
 
 This server, through its unified `claude_code` tool, unlocks a wide range of powerful capabilities by giving your AI direct access to the Claude Code CLI. Here are some examples of what you can achieve:
