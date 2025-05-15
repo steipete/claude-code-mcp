@@ -158,6 +158,8 @@ This server, through its unified `claude_code` tool, unlocks a wide range of pow
 6.  **Complex Multi-Step Workflows:**
     -   Automate version bumps, update changelogs, and tag releases: `"Your work folder is /Users/steipete/my_project\n\nFollow these steps: 1. Update the version in package.json to 2.5.0. 2. Add a new section to CHANGELOG.md for version 2.5.0 with the heading '### Added' and list 'New feature X'. 3. Stage package.json and CHANGELOG.md. 4. Commit with message 'release: version 2.5.0'. 5. Push the commit. 6. Create and push a git tag v2.5.0."`
 
+    <img src="assets/multistep_example.png" alt="Complex multi-step operation example" width="50%">
+
 7.  **Repairing Files with Syntax Errors:**
     -   `"Your work folder is /path/to/project\n\nThe file 'src/utils/parser.js' has syntax errors after a recent complex edit that broke its structure. Please analyze it, identify the syntax errors, and correct the file to make it valid JavaScript again, ensuring the original logic is preserved as much as possible."`
 
