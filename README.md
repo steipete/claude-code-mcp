@@ -1,5 +1,7 @@
 # Claude Code MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@steipete/claude-code-mcp)](https://smithery.ai/server/@steipete/claude-code-mcp)
+
 <img src="assets/agents_in_agents_meme.jpg" alt="Agents in Agents Meme">
 
 An MCP (Model Context Protocol) server that allows running Claude Code in one-shot mode with permissions bypassed automatically.
@@ -32,6 +34,15 @@ This MCP server provides one tool that can be used by LLMs to interact with Clau
 
 ## Installation & Usage
 
+### Installing via Smithery
+
+To install Claude Code Execution Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@steipete/claude-code-mcp):
+
+```bash
+npx -y @smithery/cli install @steipete/claude-code-mcp --client claude
+```
+
+### Installing Manually
 The recommended way to use this server is by installing it by using `npx`.
 
 ```json
