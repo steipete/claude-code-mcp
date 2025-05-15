@@ -150,9 +150,7 @@ class ClaudeCodeServer {
       tools: [
         {
           name: 'claude_code',
-          description: `Claude Code Agent — runs shell/Git/fs commands.
-  Use the 'workFolder' parameter to specify the execution directory if needed.
-
+          description: `
   **What it can do**
 
   • Code work  Generate / analyse / refactor / fix
@@ -178,6 +176,7 @@ class ClaudeCodeServer {
   1. Be explicit & step-by-step for complex tasks.
   2. For multi-line text, write it to a temporary file in the project root, use that file, then delete it.
   3. If you get a timeout, split the task into smaller steps.
+  4. **Seeking a second opinion/analysis**: If you're stuck or want advice, you can ask claude code to analyze a problem and suggest solutions. Clearly state in your prompt that you are looking for analysis only and no actual file modifications should be made.
         `,
           inputSchema: {
             type: 'object',
@@ -227,12 +226,12 @@ class ClaudeCodeServer {
 
       // Determine the working directory
       let effectiveCwd = homedir(); // Default CWD is user's home directory
-      
+
       // Check if workFolder is provided in the tool arguments
       if (toolArguments.workFolder && typeof toolArguments.workFolder === 'string') {
         const resolvedCwd = pathResolve(toolArguments.workFolder);
         debugLog(`[Debug] Specified workFolder: ${toolArguments.workFolder}, Resolved to: ${resolvedCwd}`);
-        
+
         // Check if the resolved path exists
         if (existsSync(resolvedCwd)) {
           effectiveCwd = resolvedCwd;
