@@ -193,7 +193,7 @@ class ClaudeCodeServer {
               },
               workFolder: {
                 type: 'string',
-                description: 'Mandatory when using file operations or referencing any file. The working directory for the Claude CLI execution.',
+                description: 'Mandatory when using file operations or referencing any file. The working directory for the Claude CLI execution. Must be an absolute path.',
               },
             },
             required: ['prompt'],
