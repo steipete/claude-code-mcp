@@ -97,8 +97,7 @@ describe('ClaudeCodeServer Unit Tests', () => {
     it('should return local path when it exists', async () => {
       mockHomedir.mockReturnValue('/home/user');
       mockExistsSync.mockImplementation((path) => {
-        // Mock returns false for test mock path, true for real CLI path
-        if (path === '/tmp/claude-code-test-mock/claude') return false;
+        // Mock returns true for real CLI path
         if (path === '/home/user/.claude/local/claude') return true;
         return false;
       });
@@ -124,6 +123,50 @@ describe('ClaudeCodeServer Unit Tests', () => {
       expect(consoleWarnSpy).toHaveBeenCalledWith(
         expect.stringContaining('Claude CLI not found at ~/.claude/local/claude')
       );
+    });
+
+    it('should use custom name from CLAUDE_CLI_NAME', async () => {
+      process.env.CLAUDE_CLI_NAME = 'my-claude';
+      mockHomedir.mockReturnValue('/home/user');
+      mockExistsSync.mockReturnValue(false);
+      
+      const module = await import('../server.js');
+      // @ts-ignore
+      const findClaudeCli = module.default?.findClaudeCli || module.findClaudeCli;
+      
+      const result = findClaudeCli();
+      expect(result).toBe('my-claude');
+    });
+
+    it('should use absolute path from CLAUDE_CLI_NAME', async () => {
+      process.env.CLAUDE_CLI_NAME = '/absolute/path/to/claude';
+      
+      const module = await import('../server.js');
+      // @ts-ignore
+      const findClaudeCli = module.default?.findClaudeCli || module.findClaudeCli;
+      
+      const result = findClaudeCli();
+      expect(result).toBe('/absolute/path/to/claude');
+    });
+
+    it('should throw error for relative paths in CLAUDE_CLI_NAME', async () => {
+      process.env.CLAUDE_CLI_NAME = './relative/path/claude';
+      
+      const module = await import('../server.js');
+      // @ts-ignore
+      const findClaudeCli = module.default?.findClaudeCli || module.findClaudeCli;
+      
+      expect(() => findClaudeCli()).toThrow('Invalid CLAUDE_CLI_NAME: Relative paths are not allowed');
+    });
+
+    it('should throw error for paths with ../ in CLAUDE_CLI_NAME', async () => {
+      process.env.CLAUDE_CLI_NAME = '../relative/path/claude';
+      
+      const module = await import('../server.js');
+      // @ts-ignore
+      const findClaudeCli = module.default?.findClaudeCli || module.findClaudeCli;
+      
+      expect(() => findClaudeCli()).toThrow('Invalid CLAUDE_CLI_NAME: Relative paths are not allowed');
     });
   });
 

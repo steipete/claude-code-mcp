@@ -13,10 +13,10 @@ describe('Claude Code MCP E2E Tests', () => {
         await getSharedMock();
         // Create a temporary directory for test files
         testDir = mkdtempSync(join(tmpdir(), 'claude-code-test-'));
-        // Initialize MCP client with debug mode and custom binary name
+        // Initialize MCP client with debug mode and custom binary name using absolute path
         client = new MCPTestClient(serverPath, {
             MCP_CLAUDE_DEBUG: 'true',
-            CLAUDE_CLI_NAME: 'claudeMocked',
+            CLAUDE_CLI_NAME: '/tmp/claude-code-test-mock/claudeMocked',
         });
         await client.connect();
     });

@@ -1,1 +1,32 @@
+# Image assets  
 assets/
+
+# Test files
+src/__tests__/
+dist/__tests__/
+*.test.ts
+*.test.js
+vitest.config.*.ts
+
+# Source TypeScript files (only need compiled JS)
+src/
+*.ts
+!dist/*.js
+
+# Development files
+.vscode/
+.github/
+tsconfig.json
+vitest.config.ts
+print-eslint-config.js
+
+# Documentation that's not needed in package
+docs/
+AGENT.md
+
+# Test artifacts
+coverage/
+.nyc_output/
+
+# Temporary files
+test-cli-name.js

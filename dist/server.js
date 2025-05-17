@@ -6,6 +6,7 @@ import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve as pathResolve } from 'node:path';
+import * as path from 'path';
 import packageJson from '../package.json' with { type: 'json' }; // Import package.json with attribute
 // Define debugMode globally using const
 const debugMode = process.env.MCP_CLAUDE_DEBUG === 'true';
@@ -17,10 +18,12 @@ export function debugLog(message, ...optionalParams) {
 }
 /**
  * Determine the Claude CLI command/path.
- * 1. Checks for CLAUDE_CLI_NAME environment variable for custom binary name.
- * 2. Checks for Claude CLI at the test mock directory if we're in test environment.
- * 3. Checks for Claude CLI at the local user path: ~/.claude/local/claude.
- * 4. If not found, defaults to 'claude', relying on the system's PATH for lookup.
+ * 1. Checks for CLAUDE_CLI_NAME environment variable:
+ *    - If absolute path, uses it directly
+ *    - If relative path, throws error
+ *    - If simple name, continues with path resolution
+ * 2. Checks for Claude CLI at the local user path: ~/.claude/local/claude.
+ * 3. If not found, defaults to the CLI name (or 'claude'), relying on the system's PATH for lookup.
  */
 export function findClaudeCli() {
     debugLog('[Debug] Attempting to find Claude CLI...');
@@ -28,16 +31,18 @@ export function findClaudeCli() {
     const customCliName = process.env.CLAUDE_CLI_NAME;
     if (customCliName) {
         debugLog(`[Debug] Using custom Claude CLI name from CLAUDE_CLI_NAME: ${customCliName}`);
+        // If it's an absolute path, use it directly
+        if (path.isAbsolute(customCliName)) {
+            debugLog(`[Debug] CLAUDE_CLI_NAME is an absolute path: ${customCliName}`);
+            return customCliName;
+        }
+        // If it starts with ~ or ./, reject as relative paths are not allowed
+        if (customCliName.startsWith('./') || customCliName.startsWith('../') || customCliName.includes('/')) {
+            throw new Error(`Invalid CLAUDE_CLI_NAME: Relative paths are not allowed. Use either a simple name (e.g., 'claude') or an absolute path (e.g., '/tmp/claude-test')`);
+        }
     }
     const cliName = customCliName || 'claude';
-    // 1. Check test mock path (for both CI and local tests)
-    const testMockPath = join('/tmp', 'claude-code-test-mock', cliName);
-    debugLog(`[Debug] Checking for test mock Claude CLI at: ${testMockPath}`);
-    if (existsSync(testMockPath)) {
-        debugLog(`[Debug] Found test mock Claude CLI at: ${testMockPath}. Using this path.`);
-        return testMockPath;
-    }
-    // 2. Try local install path: ~/.claude/local/claude (using the original name for local installs)
+    // Try local install path: ~/.claude/local/claude (using the original name for local installs)
     const userPath = join(homedir(), '.claude', 'local', 'claude');
     debugLog(`[Debug] Checking for Claude CLI at local user path: ${userPath}`);
     if (existsSync(userPath)) {

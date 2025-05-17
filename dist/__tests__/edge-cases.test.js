@@ -13,10 +13,10 @@ describe('Claude Code Edge Cases', () => {
         await getSharedMock();
         // Create test directory
         testDir = mkdtempSync(join(tmpdir(), 'claude-code-edge-'));
-        // Initialize client with custom binary name
+        // Initialize client with custom binary name using absolute path
         client = new MCPTestClient(serverPath, {
             MCP_CLAUDE_DEBUG: 'true',
-            CLAUDE_CLI_NAME: 'claudeMocked',
+            CLAUDE_CLI_NAME: '/tmp/claude-code-test-mock/claudeMocked',
         });
         await client.connect();
     });

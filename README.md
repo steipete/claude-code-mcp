@@ -36,16 +36,19 @@ This MCP server provides one tool that can be used by LLMs to interact with Clau
 
 ### Environment Variables
 
-- `CLAUDE_CLI_NAME`: Override the Claude CLI binary name (default: `claude`). This allows you to use a custom Claude CLI binary or specify an alternative command name. This is useful for:
+- `CLAUDE_CLI_NAME`: Override the Claude CLI binary name or provide an absolute path (default: `claude`). This allows you to use a custom Claude CLI binary. This is useful for:
   - Using custom Claude CLI wrappers
   - Testing with mocked binaries
   - Running multiple Claude CLI versions side by side
   
-  Example: `CLAUDE_CLI_NAME=claude-custom` or `CLAUDE_CLI_NAME=claude-v2`
+  Supported formats:
+  - Simple name: `CLAUDE_CLI_NAME=claude-custom` or `CLAUDE_CLI_NAME=claude-v2`
+  - Absolute path: `CLAUDE_CLI_NAME=/path/to/custom/claude`
   
-  When set, the server will look for the specified binary name in:
-  1. The test mock directory (`/tmp/claude-code-test-mock/<name>`)
-  2. The system PATH (instead of the default `claude` command)
+  Relative paths (e.g., `./claude` or `../claude`) are not allowed and will throw an error.
+  
+  When set to a simple name, the server will look for the specified binary in:
+  1. The system PATH (instead of the default `claude` command)
   
   Note: The local user installation path (`~/.claude/local/claude`) will still be checked but only for the default `claude` binary.
 
