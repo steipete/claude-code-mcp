@@ -13,7 +13,6 @@ import { existsSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve as pathResolve } from 'node:path';
 import * as path from 'path';
-import * as os from 'os'; // Added os import
 import packageJson from '../package.json' with { type: 'json' }; // Import package.json with attribute
 
 // Define debugMode globally using const
@@ -38,7 +37,7 @@ export function findClaudeCli(): string {
   // 1. Check CI environment mock path
   const isCI = process.env.CI === 'true';
   if (isCI) {
-    const ciPath = join(os.tmpdir(), 'claude-mock', 'claude');
+    const ciPath = join(tmpdir(), 'claude-mock', 'claude');
     debugLog(`[Debug] CI environment detected, checking for Claude CLI at: ${ciPath}`);
     
     if (existsSync(ciPath)) {

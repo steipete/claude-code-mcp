@@ -4,9 +4,8 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError, } from '@modelcontextprotocol/sdk/types.js';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join, resolve as pathResolve } from 'node:path';
-import * as os from 'os'; // Added os import
 import packageJson from '../package.json' with { type: 'json' }; // Import package.json with attribute
 // Define debugMode globally using const
 const debugMode = process.env.MCP_CLAUDE_DEBUG === 'true';
@@ -27,7 +26,7 @@ export function findClaudeCli() {
     // 1. Check CI environment mock path
     const isCI = process.env.CI === 'true';
     if (isCI) {
-        const ciPath = join(os.tmpdir(), 'claude-mock', 'claude');
+        const ciPath = join(tmpdir(), 'claude-mock', 'claude');
         debugLog(`[Debug] CI environment detected, checking for Claude CLI at: ${ciPath}`);
         if (existsSync(ciPath)) {
             debugLog(`[Debug] Found Claude CLI at CI path: ${ciPath}. Using this path.`);
