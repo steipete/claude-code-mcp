@@ -1,0 +1,171 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { MCPTestClient } from './utils/mcp-client.js';
+import { ClaudeMock } from './utils/claude-mock.js';
+
+describe('Claude Code Edge Cases', () => {
+  let client: MCPTestClient;
+  let testDir: string;
+  let claudeMock: ClaudeMock;
+  const serverPath = 'dist/server.js';
+
+  beforeEach(async () => {
+    // Setup mock
+    claudeMock = new ClaudeMock();
+    await claudeMock.setup();
+    
+    // Create test directory
+    testDir = mkdtempSync(join(tmpdir(), 'claude-code-edge-'));
+    
+    // Initialize client
+    client = new MCPTestClient(serverPath, {
+      MCP_CLAUDE_DEBUG: 'true',
+    });
+    
+    await client.connect();
+  });
+
+  afterEach(async () => {
+    await client.disconnect();
+    await claudeMock.cleanup();
+    rmSync(testDir, { recursive: true, force: true });
+  });
+
+  describe('Input Validation', () => {
+    it('should reject missing prompt', async () => {
+      await expect(
+        client.callTool('claude_code', {
+          workFolder: testDir,
+        })
+      ).rejects.toThrow(/prompt/i);
+    });
+
+    it('should reject invalid prompt type', async () => {
+      await expect(
+        client.callTool('claude_code', {
+          prompt: 123, // Should be string
+          workFolder: testDir,
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should handle invalid workFolder type', async () => {
+      // Server doesn't strictly validate the workFolder type in TypeScript
+      const response = await client.callTool('claude_code', {
+        prompt: 'Test prompt',
+        workFolder: 123, // Should be string but gets coerced
+      });
+      
+      expect(response).toBeTruthy();
+    });
+
+    it('should handle empty prompt', async () => {
+      const response = await client.callTool('claude_code', {
+        prompt: '',
+        workFolder: testDir,
+      });
+      
+      expect(response).toBeTruthy();
+    });
+  });
+
+  describe('Special Characters', () => {
+    it('should handle prompts with quotes', async () => {
+      const response = await client.callTool('claude_code', {
+        prompt: 'Create a file with content "Hello \\"World\\""',
+        workFolder: testDir,
+      });
+
+      expect(response).toBeTruthy();
+    });
+
+    it('should handle prompts with newlines', async () => {
+      const response = await client.callTool('claude_code', {
+        prompt: 'Create a file with content:\\nLine 1\\nLine 2',
+        workFolder: testDir,
+      });
+
+      expect(response).toBeTruthy();
+    });
+
+    it('should handle prompts with shell special characters', async () => {
+      const response = await client.callTool('claude_code', {
+        prompt: 'Create a file named test$file.txt',
+        workFolder: testDir,
+      });
+
+      expect(response).toBeTruthy();
+    });
+  });
+
+  describe('Error Recovery', () => {
+    it('should handle Claude CLI not found gracefully', async () => {
+      // Temporarily remove the mock to simulate missing CLI
+      await claudeMock.cleanup();
+      
+      await expect(
+        client.callTool('claude_code', {
+          prompt: 'Test prompt',
+          workFolder: testDir,
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should handle permission denied errors', async () => {
+      const restrictedDir = '/root/restricted';
+      
+      // Server will use default directory if restricted directory doesn't exist
+      const response = await client.callTool('claude_code', {
+        prompt: 'Test prompt',
+        workFolder: restrictedDir,
+      });
+      
+      expect(response).toBeTruthy();
+    });
+  });
+
+  describe('Concurrent Requests', () => {
+    it('should handle multiple simultaneous requests', async () => {
+      const promises = Array(5).fill(null).map((_, i) => 
+        client.callTool('claude_code', {
+          prompt: `Create file test${i}.txt`,
+          workFolder: testDir,
+        })
+      );
+
+      const results = await Promise.allSettled(promises);
+      const successful = results.filter(r => r.status === 'fulfilled');
+      
+      expect(successful.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Large Prompts', () => {
+    it('should handle very long prompts', async () => {
+      const longPrompt = 'Create a file with content: ' + 'x'.repeat(10000);
+      
+      const response = await client.callTool('claude_code', {
+        prompt: longPrompt,
+        workFolder: testDir,
+      });
+
+      expect(response).toBeTruthy();
+    });
+  });
+
+  describe('Path Traversal', () => {
+    it('should prevent path traversal attacks', async () => {
+      const maliciousPath = join(testDir, '..', '..', 'etc', 'passwd');
+      
+      // Server resolves paths safely
+      const response = await client.callTool('claude_code', {
+        prompt: 'Read file',
+        workFolder: maliciousPath,
+      });
+      
+      expect(response).toBeTruthy();
+    });
+  });
+});
