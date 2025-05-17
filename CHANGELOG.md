@@ -7,18 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.10.1] - 2025-05-17
 
-### Added
 - Tool version and startup time print on first use
 
 ## [1.10.0] - 2025-05-17
 
-### Added
 - Support for `CLAUDE_CLI_NAME` environment variable to override the Claude CLI binary name
 - Support for absolute paths in `CLAUDE_CLI_NAME` (e.g., `/tmp/claude-test`)
 - Comprehensive unit and e2e tests for the server functionality
 - Test infrastructure with mocked Claude CLI for reliable testing
-
-### Changed
 - `CLAUDE_CLI_NAME` now supports both simple names and absolute paths
 - Relative paths in `CLAUDE_CLI_NAME` now throw an error (security improvement)
 - Removed test mock directory lookup when absolute path is provided

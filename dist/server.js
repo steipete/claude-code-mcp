@@ -12,6 +12,8 @@ import packageJson from '../package.json' with { type: 'json' }; // Import packa
 const debugMode = process.env.MCP_CLAUDE_DEBUG === 'true';
 // Track if this is the first tool use for version printing
 let isFirstToolUse = true;
+// Capture server startup time when the module loads
+const serverStartupTime = new Date().toISOString();
 // Dedicated debug logging function
 export function debugLog(message, ...optionalParams) {
     if (debugMode) {
@@ -233,8 +235,7 @@ export class ClaudeCodeServer {
                 debugLog(`[Debug] Attempting to execute Claude CLI with prompt: "${prompt}" in CWD: "${effectiveCwd}"`);
                 // Print tool info on first use
                 if (isFirstToolUse) {
-                    const startupTime = new Date().toISOString();
-                    const versionInfo = `claude_code v${packageJson.version} started at ${startupTime}`;
+                    const versionInfo = `claude_code v${packageJson.version} started at ${serverStartupTime}`;
                     console.error(versionInfo);
                     isFirstToolUse = false;
                 }
