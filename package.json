@@ -12,7 +12,10 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "tsx src/server.ts",
-    "test": "vitest",
+    "test": "npm run build && vitest",
+    "test:unit": "vitest run --config vitest.config.unit.ts",
+    "test:e2e": "npm run build && vitest run --config vitest.config.e2e.ts",
+    "test:e2e:local": "npm run build && vitest run --config vitest.config.e2e.ts",
     "test:coverage": "vitest --coverage",
     "test:watch": "vitest --watch"
   },
@@ -22,6 +25,9 @@
     "zod": "^3.24.4"
   },
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "devDependencies": {
     "@types/node": "^22.15.17",
     "tsx": "^4.19.4",
