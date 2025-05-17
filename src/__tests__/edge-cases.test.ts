@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { MCPTestClient } from './utils/mcp-client.js';
 import { ClaudeMock } from './utils/claude-mock.js';
+import { verifyMockExists } from './utils/test-helpers.js';
 
 describe('Claude Code Edge Cases', () => {
   let client: MCPTestClient;
@@ -104,9 +105,6 @@ describe('Claude Code Edge Cases', () => {
 
   describe('Error Recovery', () => {
     it('should handle Claude CLI not found gracefully', async () => {
-      // Temporarily remove the mock to simulate missing CLI
-      await claudeMock.cleanup();
-      
       // Create a client with a different binary name that doesn't exist
       const errorClient = new MCPTestClient(serverPath, {
         MCP_CLAUDE_DEBUG: 'true',
@@ -125,6 +123,11 @@ describe('Claude Code Edge Cases', () => {
     });
 
     it('should handle permission denied errors', async () => {
+      // Make sure mock exists before running test
+      if (!verifyMockExists('claudeMocked')) {
+        await claudeMock.setup();
+      }
+      
       const restrictedDir = '/root/restricted';
       
       // This test actually verifies that the server gracefully handles

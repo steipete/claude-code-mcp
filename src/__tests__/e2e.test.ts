@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { MCPTestClient } from './utils/mcp-client.js';
 import { ClaudeMock } from './utils/claude-mock.js';
+import { verifyMockExists } from './utils/test-helpers.js';
 
 describe('Claude Code MCP E2E Tests', () => {
   let client: MCPTestClient;
@@ -129,6 +130,11 @@ describe('Claude Code MCP E2E Tests', () => {
 
   describe('Debug Mode', () => {
     it('should log debug information when enabled', async () => {
+      // Ensure mock exists for debug test
+      if (!verifyMockExists('claudeMocked')) {
+        await claudeMock.setup();
+      }
+      
       // Debug logs go to stderr, which we capture in the client
       const response = await client.callTool('claude_code', {
         prompt: 'Debug test prompt',
