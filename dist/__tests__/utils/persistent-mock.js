@@ -9,7 +9,11 @@ export async function getSharedMock() {
     // Always ensure mock exists
     const mockPath = join('/tmp', 'claude-code-test-mock', 'claudeMocked');
     if (!existsSync(mockPath)) {
+        console.error(`[DEBUG] Mock not found at ${mockPath}, creating it...`);
         await sharedMock.setup();
+    }
+    else {
+        console.error(`[DEBUG] Mock already exists at ${mockPath}`);
     }
     return sharedMock;
 }

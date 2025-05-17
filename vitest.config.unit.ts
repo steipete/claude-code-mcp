@@ -19,6 +19,8 @@ export default defineConfig({
       'node_modules/**',
       'src/__tests__/e2e.test.ts',
       'src/__tests__/edge-cases.test.ts',
+      'dist/__tests__/e2e.test.js',
+      'dist/__tests__/edge-cases.test.js',
     ],
     mockReset: true,
     clearMocks: true,
