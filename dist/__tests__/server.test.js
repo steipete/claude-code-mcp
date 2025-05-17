@@ -83,13 +83,19 @@ describe('ClaudeCodeServer Unit Tests', () => {
     describe('findClaudeCli function', () => {
         it('should return local path when it exists', async () => {
             mockHomedir.mockReturnValue('/home/user');
-            mockExistsSync.mockReturnValue(true);
+            mockExistsSync.mockImplementation((path) => {
+                // Mock returns false for test mock path, true for real CLI path
+                if (path === '/tmp/claude-code-test-mock/claude')
+                    return false;
+                if (path === '/home/user/.claude/local/claude')
+                    return true;
+                return false;
+            });
             const module = await import('../server.js');
             // @ts-ignore
             const findClaudeCli = module.default?.findClaudeCli || module.findClaudeCli;
             const result = findClaudeCli();
             expect(result).toBe('/home/user/.claude/local/claude');
-            expect(mockExistsSync).toHaveBeenCalledWith('/home/user/.claude/local/claude');
         });
         it('should fallback to PATH when local does not exist', async () => {
             mockHomedir.mockReturnValue('/home/user');

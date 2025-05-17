@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { homedir, tmpdir } from 'node:os';
 
 /**
  * Mock Claude CLI for testing
@@ -11,14 +10,8 @@ export class ClaudeMock {
   private responses = new Map<string, string>();
 
   constructor() {
-    // Create mock claude binary at the expected path
-    // Use temp directory on CI environments
-    const isCI = process.env.CI === 'true';
-    if (isCI) {
-      this.mockPath = join(tmpdir(), 'claude-mock', 'claude');
-    } else {
-      this.mockPath = join(homedir(), '.claude', 'local', 'claude');
-    }
+    // Always use /tmp directory for mocks in tests
+    this.mockPath = join('/tmp', 'claude-code-test-mock', 'claude');
   }
 
   /**

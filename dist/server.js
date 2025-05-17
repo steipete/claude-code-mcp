@@ -4,7 +4,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError, } from '@modelcontextprotocol/sdk/types.js';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
+import { homedir } from 'node:os';
 import { join, resolve as pathResolve } from 'node:path';
 import packageJson from '../package.json' with { type: 'json' }; // Import package.json with attribute
 // Define debugMode globally using const
@@ -17,21 +17,18 @@ export function debugLog(message, ...optionalParams) {
 }
 /**
  * Determine the Claude CLI command/path.
- * 1. Checks for Claude CLI at the temp directory if CI environment is detected.
+ * 1. Checks for Claude CLI at the test mock directory if we're in test environment.
  * 2. Checks for Claude CLI at the local user path: ~/.claude/local/claude.
  * 3. If not found, defaults to 'claude', relying on the system's PATH for lookup.
  */
 export function findClaudeCli() {
     debugLog('[Debug] Attempting to find Claude CLI...');
-    // 1. Check CI environment mock path
-    const isCI = process.env.CI === 'true';
-    if (isCI) {
-        const ciPath = join(tmpdir(), 'claude-mock', 'claude');
-        debugLog(`[Debug] CI environment detected, checking for Claude CLI at: ${ciPath}`);
-        if (existsSync(ciPath)) {
-            debugLog(`[Debug] Found Claude CLI at CI path: ${ciPath}. Using this path.`);
-            return ciPath;
-        }
+    // 1. Check test mock path (for both CI and local tests)
+    const testMockPath = join('/tmp', 'claude-code-test-mock', 'claude');
+    debugLog(`[Debug] Checking for test mock Claude CLI at: ${testMockPath}`);
+    if (existsSync(testMockPath)) {
+        debugLog(`[Debug] Found test mock Claude CLI at: ${testMockPath}. Using this path.`);
+        return testMockPath;
     }
     // 2. Try local install path: ~/.claude/local/claude
     const userPath = join(homedir(), '.claude', 'local', 'claude');
