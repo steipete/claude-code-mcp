@@ -45,7 +45,7 @@ describe('Error Handling Tests', () => {
         connect: vi.fn(),
         close: vi.fn(),
         onerror: null
-      };
+      } as any;
       Object.defineProperty(instance, 'onerror', {
         get() { return errorHandler; },
         set(handler) { errorHandler = handler; },

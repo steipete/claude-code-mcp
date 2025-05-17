@@ -30,7 +30,7 @@ vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
       setRequestHandler: vi.fn(),
       connect: vi.fn(),
       close: vi.fn(),
-      onerror: null,
+      onerror: undefined,
     };
   }),
 }));
@@ -240,8 +240,8 @@ describe('ClaudeCodeServer Unit Tests', () => {
         setRequestHandler: vi.fn(),
         connect: vi.fn(),
         close: vi.fn(),
-        onerror: null,
-      }));
+        onerror: undefined,
+      }) as any);
       
       const module = await import('../server.js');
       // @ts-ignore
@@ -264,7 +264,7 @@ describe('ClaudeCodeServer Unit Tests', () => {
         setRequestHandler: mockSetRequestHandler,
         connect: vi.fn(),
         close: vi.fn(),
-        onerror: null,
+        onerror: undefined,
       }));
       
       const module = await import('../server.js');
@@ -287,8 +287,8 @@ describe('ClaudeCodeServer Unit Tests', () => {
           setRequestHandler: vi.fn(),
           connect: vi.fn(),
           close: vi.fn(),
-          onerror: null
-        };
+          onerror: undefined
+        } as any;
         Object.defineProperty(instance, 'onerror', {
           get() { return errorHandler; },
           set(handler) { errorHandler = handler; },
@@ -318,8 +318,8 @@ describe('ClaudeCodeServer Unit Tests', () => {
         setRequestHandler: vi.fn(),
         connect: vi.fn(),
         close: vi.fn(),
-        onerror: null,
-      }));
+        onerror: undefined,
+      }) as any);
       
       const module = await import('../server.js');
       // @ts-ignore
@@ -350,8 +350,8 @@ describe('ClaudeCodeServer Unit Tests', () => {
           setRequestHandler: vi.fn(),
           connect: vi.fn(),
           close: vi.fn(),
-          onerror: null
-        };
+          onerror: undefined
+        } as any;
         Object.defineProperty(instance, 'onerror', {
           get() { return errorHandler; },
           set(handler) { errorHandler = handler; },
@@ -453,7 +453,7 @@ describe('ClaudeCodeServer Unit Tests', () => {
       mockHomedir.mockReturnValue('/home/user');
       mockExistsSync.mockImplementation((path) => {
         // Make the CLI path exist but the workFolder not exist
-        if (path.includes('.claude')) return true;
+        if (String(path).includes('.claude')) return true;
         if (path === '/nonexistent') return false;
         return false;
       });
