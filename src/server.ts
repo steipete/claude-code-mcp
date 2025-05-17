@@ -20,7 +20,7 @@ import packageJson from '../package.json' with { type: 'json' }; // Import packa
 const debugMode = process.env.MCP_CLAUDE_DEBUG === 'true';
 
 // Dedicated debug logging function
-function debugLog(message?: any, ...optionalParams: any[]): void {
+export function debugLog(message?: any, ...optionalParams: any[]): void {
   if (debugMode) {
     console.error(message, ...optionalParams);
   }
@@ -31,7 +31,7 @@ function debugLog(message?: any, ...optionalParams: any[]): void {
  * 1. Checks for Claude CLI at the local user path: ~/.claude/local/claude.
  * 2. If not found, defaults to 'claude', relying on the system's PATH for lookup.
  */
-function findClaudeCli(): string {
+export function findClaudeCli(): string {
   debugLog('[Debug] Attempting to find Claude CLI...');
 
   // 1. Try local install path: ~/.claude/local/claude
@@ -60,7 +60,7 @@ interface ClaudeCodeArgs {
 }
 
 // Ensure spawnAsync is defined correctly *before* the class
-async function spawnAsync(command: string, args: string[], options?: { timeout?: number, cwd?: string }): Promise<{ stdout: string; stderr: string }> {
+export async function spawnAsync(command: string, args: string[], options?: { timeout?: number, cwd?: string }): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     debugLog(`[Spawn] Running command: ${command} ${args.join(' ')}`);
     const process = spawn(command, args, {
@@ -109,7 +109,7 @@ async function spawnAsync(command: string, args: string[], options?: { timeout?:
  * MCP Server for Claude Code
  * Provides a simple MCP tool to run Claude CLI in one-shot mode
  */
-class ClaudeCodeServer {
+export class ClaudeCodeServer {
   private server: Server;
   private claudeCliPath: string; // This now holds either a full path or just 'claude'
   private packageVersion: string; // Add packageVersion property
@@ -301,6 +301,8 @@ class ClaudeCodeServer {
   }
 }
 
-// Create and run the server
-const server = new ClaudeCodeServer();
-server.run().catch(console.error);
+// Create and run the server if this is the main module
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const server = new ClaudeCodeServer();
+  server.run().catch(console.error);
+}
