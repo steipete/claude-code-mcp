@@ -12,16 +12,17 @@ describe('Claude Code Edge Cases', () => {
   const serverPath = 'dist/server.js';
 
   beforeEach(async () => {
-    // Setup mock
-    claudeMock = new ClaudeMock();
+    // Setup mock with custom binary name
+    claudeMock = new ClaudeMock('claudeMocked');
     await claudeMock.setup();
     
     // Create test directory
     testDir = mkdtempSync(join(tmpdir(), 'claude-code-edge-'));
     
-    // Initialize client
+    // Initialize client with custom binary name
     client = new MCPTestClient(serverPath, {
       MCP_CLAUDE_DEBUG: 'true',
+      CLAUDE_CLI_NAME: 'claudeMocked',
     });
     
     await client.connect();

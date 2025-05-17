@@ -9,9 +9,9 @@ export class ClaudeMock {
   private mockPath: string;
   private responses = new Map<string, string>();
 
-  constructor() {
+  constructor(binaryName: string = 'claude') {
     // Always use /tmp directory for mocks in tests
-    this.mockPath = join('/tmp', 'claude-code-test-mock', 'claude');
+    this.mockPath = join('/tmp', 'claude-code-test-mock', binaryName);
   }
 
   /**

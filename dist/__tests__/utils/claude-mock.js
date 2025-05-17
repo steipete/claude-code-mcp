@@ -7,9 +7,9 @@ import { join, dirname } from 'node:path';
 export class ClaudeMock {
     mockPath;
     responses = new Map();
-    constructor() {
+    constructor(binaryName = 'claude') {
         // Always use /tmp directory for mocks in tests
-        this.mockPath = join('/tmp', 'claude-code-test-mock', 'claude');
+        this.mockPath = join('/tmp', 'claude-code-test-mock', binaryName);
     }
     /**
      * Setup the mock Claude CLI

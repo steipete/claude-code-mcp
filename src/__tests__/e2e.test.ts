@@ -12,16 +12,17 @@ describe('Claude Code MCP E2E Tests', () => {
   const serverPath = 'dist/server.js';
 
   beforeEach(async () => {
-    // Setup mock Claude CLI
-    claudeMock = new ClaudeMock();
+    // Setup mock Claude CLI with custom binary name
+    claudeMock = new ClaudeMock('claudeMocked');
     await claudeMock.setup();
     
     // Create a temporary directory for test files
     testDir = mkdtempSync(join(tmpdir(), 'claude-code-test-'));
     
-    // Initialize MCP client with debug mode
+    // Initialize MCP client with debug mode and custom binary name
     client = new MCPTestClient(serverPath, {
       MCP_CLAUDE_DEBUG: 'true',
+      CLAUDE_CLI_NAME: 'claudeMocked',
     });
     
     await client.connect();
@@ -106,8 +107,7 @@ describe('Claude Code MCP E2E Tests', () => {
       expect(response).toBeTruthy();
     });
 
-    it.skip('should use default directory for non-existent working directory', async () => {
-      // Skipping: Sometimes picks up real Claude CLI instead of mock
+    it('should use default directory for non-existent working directory', async () => {
       const nonExistentDir = join(testDir, 'non-existent');
       
       const response = await client.callTool('claude_code', {

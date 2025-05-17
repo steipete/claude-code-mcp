@@ -27,15 +27,23 @@ export function debugLog(message?: any, ...optionalParams: any[]): void {
 
 /**
  * Determine the Claude CLI command/path.
- * 1. Checks for Claude CLI at the test mock directory if we're in test environment.
- * 2. Checks for Claude CLI at the local user path: ~/.claude/local/claude.
- * 3. If not found, defaults to 'claude', relying on the system's PATH for lookup.
+ * 1. Checks for CLAUDE_CLI_NAME environment variable for custom binary name.
+ * 2. Checks for Claude CLI at the test mock directory if we're in test environment.
+ * 3. Checks for Claude CLI at the local user path: ~/.claude/local/claude.
+ * 4. If not found, defaults to 'claude', relying on the system's PATH for lookup.
  */
 export function findClaudeCli(): string {
   debugLog('[Debug] Attempting to find Claude CLI...');
 
+  // Check for custom CLI name from environment variable
+  const customCliName = process.env.CLAUDE_CLI_NAME;
+  if (customCliName) {
+    debugLog(`[Debug] Using custom Claude CLI name from CLAUDE_CLI_NAME: ${customCliName}`);
+  }
+  const cliName = customCliName || 'claude';
+
   // 1. Check test mock path (for both CI and local tests)
-  const testMockPath = join('/tmp', 'claude-code-test-mock', 'claude');
+  const testMockPath = join('/tmp', 'claude-code-test-mock', cliName);
   debugLog(`[Debug] Checking for test mock Claude CLI at: ${testMockPath}`);
   
   if (existsSync(testMockPath)) {
@@ -43,7 +51,7 @@ export function findClaudeCli(): string {
     return testMockPath;
   }
 
-  // 2. Try local install path: ~/.claude/local/claude
+  // 2. Try local install path: ~/.claude/local/claude (using the original name for local installs)
   const userPath = join(homedir(), '.claude', 'local', 'claude');
   debugLog(`[Debug] Checking for Claude CLI at local user path: ${userPath}`);
 
@@ -54,10 +62,10 @@ export function findClaudeCli(): string {
     debugLog(`[Debug] Claude CLI not found at local user path: ${userPath}.`);
   }
 
-  // 3. Fallback to 'claude' (PATH lookup)
-  debugLog('[Debug] Falling back to "claude" command name, relying on spawn/PATH lookup.');
-  console.warn('[Warning] Claude CLI not found at ~/.claude/local/claude. Falling back to "claude" in PATH. Ensure it is installed and accessible.');
-  return 'claude';
+  // 3. Fallback to CLI name (PATH lookup)
+  debugLog(`[Debug] Falling back to "${cliName}" command name, relying on spawn/PATH lookup.`);
+  console.warn(`[Warning] Claude CLI not found at ~/.claude/local/claude. Falling back to "${cliName}" in PATH. Ensure it is installed and accessible.`);
+  return cliName;
 }
 
 /**
