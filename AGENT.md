@@ -54,3 +54,4 @@ The tool description can be found in `src/server.ts`. When asked to update the C
 - **Comprehensive Staging for README Image Updates:** When updating `README.md` to include new images, ensure that prompts for `claude_code` explicitly instruct it to stage *both* the modified `README.md` file *and* all new image files (e.g., from the `assets/` directory). Committing the `README.md` without its new image assets is a common pitfall.
 - **Clarity in Multi-Step Git Prompts:** For complex, multi-step `claude_code` prompts involving Git operations (like creating branches, committing multiple files, and pushing/creating PRs):
     - Clearly list all files to be staged in the commit (text files, new image assets, etc.).
+- **Automatic Push on PR Branches:** When the user asks to commit changes while on a pull request branch, Claude should automatically push the changes to the remote after committing. This ensures PR updates are immediately visible for review.
