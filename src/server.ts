@@ -38,7 +38,7 @@ export function findClaudeCli(): string {
   // 1. Check CI environment mock path
   const isCI = process.env.CI === 'true';
   if (isCI) {
-    const ciPath = join(tmpdir(), 'claude-mock', 'claude');
+    const ciPath = join(os.tmpdir(), 'claude-mock', 'claude');
     debugLog(`[Debug] CI environment detected, checking for Claude CLI at: ${ciPath}`);
     
     if (existsSync(ciPath)) {

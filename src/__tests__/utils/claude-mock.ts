@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-import { homedir } from 'node:os';
-import { tmpdir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 
 /**
  * Mock Claude CLI for testing
