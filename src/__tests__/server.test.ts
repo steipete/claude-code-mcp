@@ -265,7 +265,7 @@ describe('ClaudeCodeServer Unit Tests', () => {
         connect: vi.fn(),
         close: vi.fn(),
         onerror: undefined,
-      }));
+      }) as any);
       
       const module = await import('../server.js');
       // @ts-ignore
