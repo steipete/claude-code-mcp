@@ -242,10 +242,10 @@ export class ClaudeCodeServer {
                     console.error(versionInfo);
                     isFirstToolUse = false;
                 }
-                const claudeProcessArgs = [this.claudeCliPath, '--dangerously-skip-permissions', '-p', prompt];
-                debugLog(`[Debug] Invoking /bin/bash with args: ${claudeProcessArgs.join(' ')}`);
-                const { stdout, stderr } = await spawnAsync('/bin/bash', // Explicitly use /bin/bash as the command
-                claudeProcessArgs, // Pass the script path as the first argument to bash
+                const claudeProcessArgs = ['--dangerously-skip-permissions', '-p', prompt];
+                debugLog(`[Debug] Invoking Claude CLI: ${this.claudeCliPath} ${claudeProcessArgs.join(' ')}`);
+                const { stdout, stderr } = await spawnAsync(this.claudeCliPath, // Run the Claude CLI directly
+                claudeProcessArgs, // Pass the arguments
                 { timeout: executionTimeoutMs, cwd: effectiveCwd });
                 debugLog('[Debug] Claude CLI stdout:', stdout.trim());
                 if (stderr) {
