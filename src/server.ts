@@ -10,7 +10,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join, resolve as pathResolve } from 'node:path';
 import * as path from 'path';
 import * as os from 'os'; // Added os import
@@ -28,13 +28,26 @@ export function debugLog(message?: any, ...optionalParams: any[]): void {
 
 /**
  * Determine the Claude CLI command/path.
- * 1. Checks for Claude CLI at the local user path: ~/.claude/local/claude.
- * 2. If not found, defaults to 'claude', relying on the system's PATH for lookup.
+ * 1. Checks for Claude CLI at the temp directory if CI environment is detected.
+ * 2. Checks for Claude CLI at the local user path: ~/.claude/local/claude.
+ * 3. If not found, defaults to 'claude', relying on the system's PATH for lookup.
  */
 export function findClaudeCli(): string {
   debugLog('[Debug] Attempting to find Claude CLI...');
 
-  // 1. Try local install path: ~/.claude/local/claude
+  // 1. Check CI environment mock path
+  const isCI = process.env.CI === 'true';
+  if (isCI) {
+    const ciPath = join(tmpdir(), 'claude-mock', 'claude');
+    debugLog(`[Debug] CI environment detected, checking for Claude CLI at: ${ciPath}`);
+    
+    if (existsSync(ciPath)) {
+      debugLog(`[Debug] Found Claude CLI at CI path: ${ciPath}. Using this path.`);
+      return ciPath;
+    }
+  }
+
+  // 2. Try local install path: ~/.claude/local/claude
   const userPath = join(homedir(), '.claude', 'local', 'claude');
   debugLog(`[Debug] Checking for Claude CLI at local user path: ${userPath}`);
 
@@ -45,7 +58,7 @@ export function findClaudeCli(): string {
     debugLog(`[Debug] Claude CLI not found at local user path: ${userPath}.`);
   }
 
-  // 2. Fallback to 'claude' (PATH lookup)
+  // 3. Fallback to 'claude' (PATH lookup)
   debugLog('[Debug] Falling back to "claude" command name, relying on spawn/PATH lookup.');
   console.warn('[Warning] Claude CLI not found at ~/.claude/local/claude. Falling back to "claude" in PATH. Ensure it is installed and accessible.');
   return 'claude';

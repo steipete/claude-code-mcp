@@ -27,11 +27,8 @@ jobs:
     - name: Build
       run: npm run build
       
-    - name: Run unit tests
+    - name: Run unit tests only
       run: npm run test:unit
-      
-    - name: Run e2e tests (with mocks)
-      run: npm run test:e2e
       
     - name: Run all tests with coverage
       run: npm run test:coverage

@@ -195,6 +195,32 @@ This example illustrates `claude_code` handling a more complex, multi-step task,
 
 If you want to develop or contribute to this server, or run it from a cloned repository for testing, please see our [Local Installation & Development Setup Guide](./docs/local_install.md).
 
+## Testing
+
+The project includes comprehensive test suites:
+
+```bash
+# Run all tests
+npm test
+
+# Run unit tests only
+npm run test:unit
+
+# Run e2e tests (with mocks)
+npm run test:e2e
+
+# Run e2e tests locally (requires Claude CLI)
+npm run test:e2e:local
+
+# Watch mode for development
+npm run test:watch
+
+# Coverage report
+npm run test:coverage
+```
+
+For detailed testing documentation, see our [E2E Testing Guide](./docs/e2e-testing.md).
+
 ## Configuration via Environment Variables
 
 The server's behavior can be customized using these environment variables:

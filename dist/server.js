@@ -4,25 +4,36 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { CallToolRequestSchema, ErrorCode, ListToolsRequestSchema, McpError, } from '@modelcontextprotocol/sdk/types.js';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { homedir } from 'node:os';
+import { homedir, tmpdir } from 'node:os';
 import { join, resolve as pathResolve } from 'node:path';
 import packageJson from '../package.json' with { type: 'json' }; // Import package.json with attribute
 // Define debugMode globally using const
 const debugMode = process.env.MCP_CLAUDE_DEBUG === 'true';
 // Dedicated debug logging function
-function debugLog(message, ...optionalParams) {
+export function debugLog(message, ...optionalParams) {
     if (debugMode) {
         console.error(message, ...optionalParams);
     }
 }
 /**
  * Determine the Claude CLI command/path.
- * 1. Checks for Claude CLI at the local user path: ~/.claude/local/claude.
- * 2. If not found, defaults to 'claude', relying on the system's PATH for lookup.
+ * 1. Checks for Claude CLI at the temp directory if CI environment is detected.
+ * 2. Checks for Claude CLI at the local user path: ~/.claude/local/claude.
+ * 3. If not found, defaults to 'claude', relying on the system's PATH for lookup.
  */
-function findClaudeCli() {
+export function findClaudeCli() {
     debugLog('[Debug] Attempting to find Claude CLI...');
-    // 1. Try local install path: ~/.claude/local/claude
+    // 1. Check CI environment mock path
+    const isCI = process.env.CI === 'true';
+    if (isCI) {
+        const ciPath = join(tmpdir(), 'claude-mock', 'claude');
+        debugLog(`[Debug] CI environment detected, checking for Claude CLI at: ${ciPath}`);
+        if (existsSync(ciPath)) {
+            debugLog(`[Debug] Found Claude CLI at CI path: ${ciPath}. Using this path.`);
+            return ciPath;
+        }
+    }
+    // 2. Try local install path: ~/.claude/local/claude
     const userPath = join(homedir(), '.claude', 'local', 'claude');
     debugLog(`[Debug] Checking for Claude CLI at local user path: ${userPath}`);
     if (existsSync(userPath)) {
@@ -32,13 +43,13 @@ function findClaudeCli() {
     else {
         debugLog(`[Debug] Claude CLI not found at local user path: ${userPath}.`);
     }
-    // 2. Fallback to 'claude' (PATH lookup)
+    // 3. Fallback to 'claude' (PATH lookup)
     debugLog('[Debug] Falling back to "claude" command name, relying on spawn/PATH lookup.');
     console.warn('[Warning] Claude CLI not found at ~/.claude/local/claude. Falling back to "claude" in PATH. Ensure it is installed and accessible.');
     return 'claude';
 }
 // Ensure spawnAsync is defined correctly *before* the class
-async function spawnAsync(command, args, options) {
+export async function spawnAsync(command, args, options) {
     return new Promise((resolve, reject) => {
         debugLog(`[Spawn] Running command: ${command} ${args.join(' ')}`);
         const process = spawn(command, args, {
@@ -83,7 +94,7 @@ async function spawnAsync(command, args, options) {
  * MCP Server for Claude Code
  * Provides a simple MCP tool to run Claude CLI in one-shot mode
  */
-class ClaudeCodeServer {
+export class ClaudeCodeServer {
     server;
     claudeCliPath; // This now holds either a full path or just 'claude'
     packageVersion; // Add packageVersion property
@@ -116,34 +127,39 @@ class ClaudeCodeServer {
             tools: [
                 {
                     name: 'claude_code',
-                    description: `Claude Code Agent — runs shell/Git/fs commands.
-  Use the 'workFolder' parameter to specify the execution directory if needed.
+                    description: `Claude Code Agent: Your versatile multi-modal assistant for code, file, Git, and terminal operations via Claude CLI. Use \`workFolder\` for contextual execution.
 
-  **What it can do**
+• File ops: Create, read, (fuzzy) edit, move, copy, delete, list files, analyze/ocr images, file content analysis
+    └─ e.g., "Create /tmp/log.txt with 'system boot'", "Edit main.py to replace 'debug_mode = True' with 'debug_mode = False'", "List files in /src", "Move a specific section somewhere else"
 
-  • Code work  Generate / analyse / refactor / fix
+• Code: Generate / analyse / refactor / fix
     └─ e.g. "Generate Python to parse CSV→JSON", "Find bugs in my_script.py"
 
-  • File ops  Create, read, (fuzzy) edit, move, copy, delete.
-    └─ "Create /workspace/config.yml …", "Edit /workspace/css/style.css → add h2{color:navy}"
+• Git: Stage ▸ commit ▸ push ▸ tag (any workflow)
+    └─ "Commit '/workspace/src/main.java' with 'feat: user auth' to develop."
 
-  • Git  Stage ▸ commit ▸ push ▸ tag
-    └─ "Commit '/workspace/src/main.java' with 'feat: user auth' to develop"
-
-  • Terminal  Run any CLI cmd or open URLs
+• Terminal: Run any CLI cmd or open URLs
     └─ "npm run build", "Open https://developer.mozilla.org"
 
-  • Web search + summarise content on-the-fly
+• Web search + summarise content on-the-fly
 
-  • Multi-step workflows  (Version bumps, changelog updates, release tagging, etc.)
+• Multi-step workflows  (Version bumps, changelog updates, release tagging, etc.)
 
-  • GitHub integration  Create PRs, check CI status
+• GitHub integration  Create PRs, check CI status
 
-  **Prompt tips**
+• Confused or stuck on an issue? Ask Claude Code for a second opinion, it might surprise you!
 
-  1. Be explicit & step-by-step for complex tasks.
-  2. For multi-line text, write it to a temporary file in the project root, use that file, then delete it.
-  3. If you get a timeout, split the task into smaller steps.
+**Prompt tips**
+
+1. Be concise, explicit & step-by-step for complex tasks. No need for niceties, this is a tool to get things done.
+2. For multi-line text, write it to a temporary file in the project root, use that file, then delete it.
+3. If you get a timeout, split the task into smaller steps.
+4. **Seeking a second opinion/analysis**: If you're stuck or want advice, you can ask \`claude_code\` to analyze a problem and suggest solutions. Clearly state in your prompt that you are looking for analysis only and no actual file modifications should be made.
+5. If workFolder is set to the project path, there is no need to repeat that path in the prompt and you can use relative paths for files.
+6. Claude Code is really good at complex multi-step file operations and refactorings and faster than your native edit features.
+7. Combine file operations, README updates, and Git commands in a sequence.
+8. Claude can do much more, just ask it!
+
         `,
                     inputSchema: {
                         type: 'object',
@@ -154,7 +170,7 @@ class ClaudeCodeServer {
                             },
                             workFolder: {
                                 type: 'string',
-                                description: 'Optional. The working directory for the Claude CLI execution. Defaults to the user\'s home directory if not specified.',
+                                description: 'Mandatory when using file operations or referencing any file. The working directory for the Claude CLI execution. Must be an absolute path.',
                             },
                         },
                         required: ['prompt'],
@@ -245,6 +261,8 @@ class ClaudeCodeServer {
         console.error('Claude Code MCP server running on stdio');
     }
 }
-// Create and run the server
-const server = new ClaudeCodeServer();
-server.run().catch(console.error);
+// Create and run the server if this is the main module
+if (import.meta.url === `file://${process.argv[1]}`) {
+    const server = new ClaudeCodeServer();
+    server.run().catch(console.error);
+}
