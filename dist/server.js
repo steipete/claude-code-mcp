@@ -8,7 +8,7 @@ import { homedir } from 'node:os';
 import { join, resolve as pathResolve } from 'node:path';
 import * as path from 'path';
 // Server version - update this when releasing new versions
-const SERVER_VERSION = "1.10.1";
+const SERVER_VERSION = "1.10.2";
 // Define debugMode globally using const
 const debugMode = process.env.MCP_CLAUDE_DEBUG === 'true';
 // Track if this is the first tool use for version printing
