@@ -83,14 +83,22 @@ describe('Claude Code Edge Cases', () => {
         it('should handle Claude CLI not found gracefully', async () => {
             // Temporarily remove the mock to simulate missing CLI
             await claudeMock.cleanup();
-            await expect(client.callTool('claude_code', {
+            // Create a client with a different binary name that doesn't exist
+            const errorClient = new MCPTestClient(serverPath, {
+                MCP_CLAUDE_DEBUG: 'true',
+                CLAUDE_CLI_NAME: 'non-existent-claude',
+            });
+            await errorClient.connect();
+            await expect(errorClient.callTool('claude_code', {
                 prompt: 'Test prompt',
                 workFolder: testDir,
             })).rejects.toThrow();
+            await errorClient.disconnect();
         });
         it('should handle permission denied errors', async () => {
             const restrictedDir = '/root/restricted';
-            // Server will use default directory if restricted directory doesn't exist
+            // This test actually verifies that the server gracefully handles
+            // non-existent directories by falling back to the default directory
             const response = await client.callTool('claude_code', {
                 prompt: 'Test prompt',
                 workFolder: restrictedDir,
