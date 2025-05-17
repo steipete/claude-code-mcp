@@ -16,7 +16,7 @@ import * as path from 'path';
 import { readFileSync } from 'node:fs';
 
 // Server version - update this when releasing new versions
-const SERVER_VERSION = "1.10.1";
+const SERVER_VERSION = "1.10.2";
 
 // Define debugMode globally using const
 const debugMode = process.env.MCP_CLAUDE_DEBUG === 'true';
