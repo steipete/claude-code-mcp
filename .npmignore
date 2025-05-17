@@ -23,6 +23,9 @@ print-eslint-config.js
 # Documentation that's not needed in package
 docs/
 AGENT.md
+CLAUDE.md
+RELEASE.md
+CURSOR.md
 
 # Test artifacts
 coverage/
