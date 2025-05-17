@@ -1,19 +1,16 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterAll, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { MCPTestClient } from './utils/mcp-client.js';
-import { ClaudeMock } from './utils/claude-mock.js';
-import { verifyMockExists } from './utils/test-helpers.js';
+import { getSharedMock, cleanupSharedMock } from './utils/persistent-mock.js';
 describe('Claude Code MCP E2E Tests', () => {
     let client;
     let testDir;
-    let claudeMock;
     const serverPath = 'dist/server.js';
     beforeEach(async () => {
-        // Setup mock Claude CLI with custom binary name
-        claudeMock = new ClaudeMock('claudeMocked');
-        await claudeMock.setup();
+        // Ensure mock exists
+        await getSharedMock();
         // Create a temporary directory for test files
         testDir = mkdtempSync(join(tmpdir(), 'claude-code-test-'));
         // Initialize MCP client with debug mode and custom binary name
@@ -26,10 +23,12 @@ describe('Claude Code MCP E2E Tests', () => {
     afterEach(async () => {
         // Disconnect client
         await client.disconnect();
-        // Cleanup mock Claude CLI
-        await claudeMock.cleanup();
         // Clean up test directory
         rmSync(testDir, { recursive: true, force: true });
+    });
+    afterAll(async () => {
+        // Only cleanup mock at the very end
+        await cleanupSharedMock();
     });
     describe('Tool Registration', () => {
         it('should register claude_code tool', async () => {
@@ -106,10 +105,6 @@ describe('Claude Code MCP E2E Tests', () => {
     });
     describe('Debug Mode', () => {
         it('should log debug information when enabled', async () => {
-            // Ensure mock exists for debug test
-            if (!verifyMockExists('claudeMocked')) {
-                await claudeMock.setup();
-            }
             // Debug logs go to stderr, which we capture in the client
             const response = await client.callTool('claude_code', {
                 prompt: 'Debug test prompt',

@@ -3,19 +3,16 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { MCPTestClient } from './utils/mcp-client.js';
-import { ClaudeMock } from './utils/claude-mock.js';
-import { verifyMockExists } from './utils/test-helpers.js';
+import { getSharedMock, cleanupSharedMock } from './utils/persistent-mock.js';
 
 describe('Claude Code Edge Cases', () => {
   let client: MCPTestClient;
   let testDir: string;
-  let claudeMock: ClaudeMock;
   const serverPath = 'dist/server.js';
 
   beforeEach(async () => {
-    // Setup mock with custom binary name
-    claudeMock = new ClaudeMock('claudeMocked');
-    await claudeMock.setup();
+    // Ensure mock exists
+    await getSharedMock();
     
     // Create test directory
     testDir = mkdtempSync(join(tmpdir(), 'claude-code-edge-'));
@@ -31,8 +28,12 @@ describe('Claude Code Edge Cases', () => {
 
   afterEach(async () => {
     await client.disconnect();
-    await claudeMock.cleanup();
     rmSync(testDir, { recursive: true, force: true });
+  });
+  
+  afterAll(async () => {
+    // Cleanup mock only at the end
+    await cleanupSharedMock();
   });
 
   describe('Input Validation', () => {
@@ -123,11 +124,6 @@ describe('Claude Code Edge Cases', () => {
     });
 
     it('should handle permission denied errors', async () => {
-      // Make sure mock exists before running test
-      if (!verifyMockExists('claudeMocked')) {
-        await claudeMock.setup();
-      }
-      
       const restrictedDir = '/root/restricted';
       
       // This test actually verifies that the server gracefully handles
