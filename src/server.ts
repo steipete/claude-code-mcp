@@ -16,7 +16,7 @@ import * as path from 'path';
 import { readFileSync } from 'node:fs';
 
 // Server version - update this when releasing new versions
-const SERVER_VERSION = "1.10.12";
+const SERVER_VERSION = "1.10.13";
 
 // Define debugMode globally using const
 const debugMode = process.env.MCP_CLAUDE_DEBUG === 'true';
@@ -104,8 +104,8 @@ export async function spawnAsync(command: string, args: string[], options?: { ti
     let stdout = '';
     let stderr = '';
 
-    process.stdout.on('data', (data) => { stdout += data.toString(); });
-    process.stderr.on('data', (data) => {
+    process.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
+    process.stderr.on('data', (data: Buffer) => {
       stderr += data.toString();
       debugLog(`[Spawn Stderr Chunk] ${data.toString()}`);
     });
@@ -123,7 +123,7 @@ export async function spawnAsync(command: string, args: string[], options?: { ti
       reject(new Error(errorMessage));
     });
 
-    process.on('close', (code) => {
+    process.on('close', (code: number | null) => {
       debugLog(`[Spawn Close] Exit code: ${code}`);
       debugLog(`[Spawn Stderr Full] ${stderr.trim()}`);
       debugLog(`[Spawn Stdout Full] ${stdout.trim()}`);
@@ -165,7 +165,7 @@ export class ClaudeCodeServer {
 
     this.setupToolHandlers();
 
-    this.server.onerror = (error) => console.error('[Error]', error);
+    this.server.onerror = (error: Error) => console.error('[Error]', error);
     process.on('SIGINT', async () => {
       await this.server.close();
       process.exit(0);
@@ -213,6 +213,7 @@ export class ClaudeCodeServer {
 6. Claude Code is really good at complex multi-step file operations and refactorings and faster than your native edit features.
 7. Combine file operations, README updates, and Git commands in a sequence.
 8. Claude can do much more, just ask it!
+9. **Statelessness**: Remember that Claude Code is not stateful. Each request is independent and starts fresh, so provide all necessary context in each prompt.
 
         `,
           inputSchema: {
@@ -236,7 +237,7 @@ export class ClaudeCodeServer {
     // Handle tool calls
     const executionTimeoutMs = 1800000; // 30 minutes timeout
 
-    this.server.setRequestHandler(CallToolRequestSchema, async (args, call): Promise<ServerResult> => {
+    this.server.setRequestHandler(CallToolRequestSchema, async (args: any, call: any): Promise<ServerResult> => {
       debugLog('[Debug] Handling CallToolRequest:', args);
 
       // Correctly access toolName from args.params.name
