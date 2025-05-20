@@ -24,16 +24,17 @@ vi.mock('@modelcontextprotocol/sdk/types.js', () => ({
     return error;
   })
 }));
-vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
-  Server: vi.fn().mockImplementation(function() {
-    return {
-      setRequestHandler: vi.fn(),
-      connect: vi.fn(),
-      close: vi.fn(),
-      onerror: undefined,
-    };
-  }),
-}));
+vi.mock('@modelcontextprotocol/sdk/server/index.js', () => {
+  // Create a more robust mock for the Server class
+  const MockServer = vi.fn().mockImplementation(function(this: any) {
+    this.setRequestHandler = vi.fn();
+    this.connect = vi.fn();
+    this.close = vi.fn();
+    this.onerror = undefined; // Ensure it's a property that can be set
+    // Add any other methods or properties expected by the ClaudeCodeServer
+  });
+  return { Server: MockServer };
+});
 
 // Mock package.json
 vi.mock('../../package.json', () => ({
@@ -60,6 +61,7 @@ describe('ClaudeCodeServer Unit Tests', () => {
     originalEnv = { ...process.env };
     // Reset env
     process.env = { ...originalEnv };
+    mockHomedir.mockReturnValue('/fake/home'); // Ensure homedir is mocked for all tests by default
   });
 
   afterEach(() => {
