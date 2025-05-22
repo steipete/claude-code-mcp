@@ -32,7 +32,7 @@ This method is suitable if you prefer not to install the server globally or want
       "mcpServers": {
         "claude_code": {
           "type": "stdio",
-          "command": ["/absolute/path/to/claude-mcp-server/start.sh"],
+          "command": "/absolute/path/to/claude-mcp-server/start.sh",
           "args": []
         }
         // ... other MCP server configurations
@@ -86,7 +86,7 @@ This method allows you to install the package globally but have it point to your
       "mcpServers": {
         "claude_code": {
           "type": "stdio",
-          "command": ["claude-code-mcp"],
+          "command": "claude-code-mcp",
           "args": [],
           "env": {
             "MCP_CLAUDE_DEBUG": "false" // Or "true" for debugging
