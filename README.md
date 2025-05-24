@@ -98,7 +98,7 @@ To use a custom Claude CLI binary name and set a custom timeout:
       ],
       "env": {
         "CLAUDE_CLI_NAME": "claude-custom",
-        "CLAUDE_CLI_TIMEOUT_SECONDS": "1800" // Example: 30 minutes
+        "CLAUDE_CLI_TIMEOUT_SECONDS": "1800"
       }
     },
 ```

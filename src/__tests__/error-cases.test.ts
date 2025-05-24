@@ -6,62 +6,39 @@ import { EventEmitter } from 'node:events';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
-// Mock dependencies
-vi.mock('node:child_process');
-vi.mock('node:fs');
-vi.mock('node:os');
-vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
-  Server: vi.fn()
-}));
-
-vi.mock('@modelcontextprotocol/sdk/types.js', () => ({
-  ListToolsRequestSchema: { name: 'listTools' },
-  CallToolRequestSchema: { name: 'callTool' },
-  ErrorCode: { 
-    InternalError: 'InternalError',
-    MethodNotFound: 'MethodNotFound'
-  },
-  McpError: vi.fn().mockImplementation((code, message) => {
-    const error = new Error(message);
-    (error as any).code = code;
-    return error;
-  })
-}));
+// Global mocks are in setupTests.ts, remove redundant vi.mock calls here
+// vi.mock('node:child_process');
+// vi.mock('node:fs');
+// vi.mock('node:os');
+// vi.mock('@modelcontextprotocol/sdk/server/index.js', ...);
+// vi.mock('@modelcontextprotocol/sdk/types.js', ...);
 
 const mockExistsSync = vi.mocked(existsSync);
 const mockSpawn = vi.mocked(spawn);
-const mockHomedir = vi.mocked(homedir);
+const mockHomedir = vi.mocked(homedir); // This is from node:os, already globally mocked but can be specifically controlled too
 
 describe('Error Handling Tests', () => {
   let consoleErrorSpy: any;
   let originalEnv: any;
-  let errorHandler: any = null;
+  // let errorHandler: any = null; // errorHandler and setupServerMock might need adjustment if Server mock is now fully global
 
-  function setupServerMock() {
-    errorHandler = null;
-    vi.mocked(Server).mockImplementation(() => {
-      const instance = {
-        setRequestHandler: vi.fn(),
-        connect: vi.fn(),
-        close: vi.fn(),
-        onerror: null
-      } as any;
-      Object.defineProperty(instance, 'onerror', {
-        get() { return errorHandler; },
-        set(handler) { errorHandler = handler; },
-        enumerable: true,
-        configurable: true
-      });
-      return instance;
-    });
-  }
+  // function setupServerMock() { ... } // This function might need to be removed or adapted
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.resetModules();
+  beforeEach(async () => {
+    vi.clearAllMocks(); // This is good, but global setup might also handle some aspects.
+                      // vitest.config.unit.ts already has mockReset, clearMocks, restoreMocks.
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     originalEnv = { ...process.env };
     process.env = { ...originalEnv };
+    // mockHomedir.mockReturnValue('/fake/home'); // This is now global from setupTests.ts
+    
+    // If Server mock needs to be reset or re-customized per test, rely on global mockReset/clearMocks config
+    // const { Server: MockedServer } = await import('@modelcontextprotocol/sdk/server/index.js');
+    // vi.mocked(MockedServer).mockClear(); // Handled by mockReset:true
+    // vi.mocked(MockedServer.prototype.setRequestHandler).mockClear(); // Problematic and likely redundant
+    // vi.mocked(MockedServer.prototype.connect).mockClear();
+    // vi.mocked(MockedServer.prototype.close).mockClear();
+
   });
 
   afterEach(() => {
@@ -75,7 +52,7 @@ describe('Error Handling Tests', () => {
       mockExistsSync.mockReturnValue(true);
       
       // Set up Server mock before importing the module
-      setupServerMock();
+      // setupServerMock();
       
       const module = await import('../server.js');
       // @ts-ignore
@@ -103,7 +80,7 @@ describe('Error Handling Tests', () => {
     it('should handle timeout errors', async () => {
       mockHomedir.mockReturnValue('/home/user');
       mockExistsSync.mockReturnValue(true);
-      setupServerMock();
+      // setupServerMock();
       
       const module = await import('../server.js');
       // @ts-ignore
@@ -164,7 +141,7 @@ describe('Error Handling Tests', () => {
     it('should handle invalid argument types', async () => {
       mockHomedir.mockReturnValue('/home/user');
       mockExistsSync.mockReturnValue(true);
-      setupServerMock();
+      // setupServerMock();
       const module = await import('../server.js');
       // @ts-ignore
       const { ClaudeCodeServer } = module;
@@ -191,7 +168,7 @@ describe('Error Handling Tests', () => {
     it('should include CLI error details in error message', async () => {
       mockHomedir.mockReturnValue('/home/user');
       mockExistsSync.mockReturnValue(true);
-      setupServerMock();
+      // setupServerMock();
       
       const module = await import('../server.js');
       // @ts-ignore
@@ -339,7 +316,7 @@ describe('Error Handling Tests', () => {
       mockHomedir.mockReturnValue('/home/user');
       mockExistsSync.mockReturnValue(false);
       const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      setupServerMock();
+      // setupServerMock();
       
       const module = await import('../server.js');
       // @ts-ignore
@@ -357,7 +334,7 @@ describe('Error Handling Tests', () => {
     it('should handle server connection errors', async () => {
       mockHomedir.mockReturnValue('/home/user');
       mockExistsSync.mockReturnValue(true);
-      setupServerMock();
+      // setupServerMock();
       const module = await import('../server.js');
       // @ts-ignore
       const { ClaudeCodeServer } = module;

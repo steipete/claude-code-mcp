@@ -6,42 +6,16 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { EventEmitter } from 'node:events';
 
-// Mock dependencies
-vi.mock('node:child_process');
-vi.mock('node:fs');
-vi.mock('node:os');
-vi.mock('@modelcontextprotocol/sdk/server/stdio.js');
-vi.mock('@modelcontextprotocol/sdk/types.js', () => ({
-  ListToolsRequestSchema: { name: 'listTools' },
-  CallToolRequestSchema: { name: 'callTool' },
-  ErrorCode: { 
-    InternalError: 'InternalError',
-    MethodNotFound: 'MethodNotFound'
-  },
-  McpError: vi.fn().mockImplementation((code, message) => {
-    const error = new Error(message);
-    (error as any).code = code;
-    return error;
-  })
-}));
-vi.mock('@modelcontextprotocol/sdk/server/index.js', () => {
-  // Create a more robust mock for the Server class
-  const MockServer = vi.fn().mockImplementation(function(this: any) {
-    this.setRequestHandler = vi.fn();
-    this.connect = vi.fn();
-    this.close = vi.fn();
-    this.onerror = undefined; // Ensure it's a property that can be set
-    // Add any other methods or properties expected by the ClaudeCodeServer
-  });
-  return { Server: MockServer };
-});
+// Global mocks are in setupTests.ts, remove redundant vi.mock calls here
+// vi.mock('node:child_process');
+// vi.mock('node:fs');
+// vi.mock('node:os');
+// vi.mock('@modelcontextprotocol/sdk/server/stdio.js');
+// vi.mock('@modelcontextprotocol/sdk/types.js', ...);
+// vi.mock('@modelcontextprotocol/sdk/server/index.js', ...);
+// vi.mock('../../package.json', ...);
 
-// Mock package.json
-vi.mock('../../package.json', () => ({
-  default: { version: '1.0.0-test' }
-}));
-
-// Re-import after mocks
+// Re-import after mocks (or rather, ensure these are available if used with vi.mocked)
 const mockExistsSync = vi.mocked(existsSync);
 const mockSpawn = vi.mocked(spawn);
 const mockHomedir = vi.mocked(homedir);
@@ -55,7 +29,7 @@ describe('ClaudeCodeServer Unit Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.resetModules();
+    vi.resetModules(); // Restore resetModules for server.test.ts
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     originalEnv = { ...process.env };
@@ -82,14 +56,12 @@ describe('ClaudeCodeServer Unit Tests', () => {
     });
 
     it('should not log when debug mode is disabled', async () => {
-      // Reset modules to clear cache
-      vi.resetModules();
-      consoleErrorSpy.mockClear();
       process.env.MCP_CLAUDE_DEBUG = 'false';
       const module = await import('../server.js');
       // @ts-ignore
       const { debugLog } = module;
       
+      consoleErrorSpy.mockClear(); // Clear spy just before the targeted action
       debugLog('Test message');
       expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
@@ -376,13 +348,14 @@ describe('ClaudeCodeServer Unit Tests', () => {
       
       const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
       const server = new ClaudeCodeServer();
-      const mockServerInstance = vi.mocked(Server).mock.results[0].value;
-      
+      // const mockServerInstance = vi.mocked(Server).mock.results[0].value; // Less direct
+      const { Server: MockedServer } = await import('@modelcontextprotocol/sdk/server/index.js'); // Get the mocked class
+
       // Emit SIGINT
       const sigintHandler = process.listeners('SIGINT').slice(-1)[0] as any;
       await sigintHandler();
       
-      expect(mockServerInstance.close).toHaveBeenCalled();
+      expect(vi.mocked(MockedServer.prototype.close)).toHaveBeenCalled(); // Assert on the prototype spy
       expect(exitSpy).toHaveBeenCalledWith(0);
       
       exitSpy.mockRestore();
@@ -551,9 +524,11 @@ describe('ClaudeCodeServer Unit Tests', () => {
       
       await promise;
       
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[Warning] Specified workFolder does not exist: /nonexistent.')
+      // Check if the specific warning was logged among potentially other logs
+      const warningCall = consoleErrorSpy.mock.calls.find((callArgs: any[]) => 
+        typeof callArgs[0] === 'string' && callArgs[0].includes('[Warning] Specified workFolder does not exist: /nonexistent.')
       );
+      expect(warningCall).toBeDefined();
     });
   });
 });
