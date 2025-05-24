@@ -9,10 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Made Claude CLI execution timeout configurable via `CLAUDE_CLI_TIMEOUT_SECONDS` environment variable (defaults to 3600 seconds / 60 minutes).
+- Dynamically fetch and display Claude CLI version in the tool description. MCP server version is also displayed.
 
 ### Changed
 - Increased default Claude CLI execution timeout from 30 minutes to 60 minutes.
 - Removed comment from JSON example in `README.md`.
+- Tool description newlines are preserved, and backticks are correctly escaped for markdown.
+- Improved error message in tool description if Claude CLI version cannot be fetched.
+
+### Removed
+- Removed the old mechanism of printing MCP server version on the first tool use.
 
 ## [1.10.13] - 2025-05-20
 
