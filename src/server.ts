@@ -235,7 +235,22 @@ export class ClaudeCodeServer {
     }));
 
     // Handle tool calls
-    const executionTimeoutMs = 1800000; // 30 minutes timeout
+    const defaultTimeoutSeconds = 3600; // Default to 60 minutes
+    const timeoutSecondsEnv = process.env.CLAUDE_CLI_TIMEOUT_SECONDS;
+    let executionTimeoutSeconds = defaultTimeoutSeconds;
+
+    if (timeoutSecondsEnv) {
+      const parsedTimeout = parseInt(timeoutSecondsEnv, 10);
+      if (!isNaN(parsedTimeout) && parsedTimeout > 0) {
+        executionTimeoutSeconds = parsedTimeout;
+        debugLog(`[Config] Using custom Claude CLI timeout: ${executionTimeoutSeconds} seconds from CLAUDE_CLI_TIMEOUT_SECONDS.`);
+      } else {
+        debugLog(`[Warning] Invalid value for CLAUDE_CLI_TIMEOUT_SECONDS: "${timeoutSecondsEnv}". Using default: ${defaultTimeoutSeconds} seconds.`);
+      }
+    } else {
+      debugLog(`[Config] Using default Claude CLI timeout: ${defaultTimeoutSeconds} seconds.`);
+    }
+    const executionTimeoutMs = executionTimeoutSeconds * 1000;
 
     this.server.setRequestHandler(CallToolRequestSchema, async (args: any, call: any): Promise<ServerResult> => {
       debugLog('[Debug] Handling CallToolRequest:', args);

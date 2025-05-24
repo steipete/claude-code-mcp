@@ -56,6 +56,7 @@ This MCP server provides one tool that can be used by LLMs to interact with Clau
   Note: The local user installation path (`~/.claude/local/claude`) will still be checked but only for the default `claude` binary.
 
 - `MCP_CLAUDE_DEBUG`: Enable debug logging (set to `true` for verbose output)
+- `CLAUDE_CLI_TIMEOUT_SECONDS`: Configure the timeout for Claude CLI operations in seconds (default: `3600`). This sets how long the server will wait for a response from the Claude CLI before considering it a timeout.
 
 ## Installation & Usage
 
@@ -82,6 +83,22 @@ To use a custom Claude CLI binary name, you can specify the environment variable
       ],
       "env": {
         "CLAUDE_CLI_NAME": "claude-custom"
+      }
+    },
+```
+
+To use a custom Claude CLI binary name and set a custom timeout:
+
+```json
+    "claude-code-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@steipete/claude-code-mcp@latest"
+      ],
+      "env": {
+        "CLAUDE_CLI_NAME": "claude-custom",
+        "CLAUDE_CLI_TIMEOUT_SECONDS": "1800" // Example: 30 minutes
       }
     },
 ```
