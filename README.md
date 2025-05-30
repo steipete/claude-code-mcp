@@ -22,7 +22,7 @@ This MCP server provides one tool that can be used by LLMs to interact with Clau
 
 ## Benefits
 
-- Claude/Windsurf often have trouble editing files. Claude Code is better and faster at it.
+- Cursor/Windsurf often have trouble editing files. Claude Code is better and faster at it.
 - Multiple commands can be queued instead of direct execution. This saves context space so more important stuff is retained longer, fewer compacts happen.
 - File ops, git, or other operations don't need costy models. Claude Code is pretty cost effective if you sign up for Antropic Max. You can use Gemini or o3 in Max mode and save costs with offloading tasks to cheaper models.
 - Claude has wider system access and can do things that Cursor/Windsurf can't do (or believe they can't), so whenever they are stuck just ask them "use claude code" and it will usually un-stuck them.
