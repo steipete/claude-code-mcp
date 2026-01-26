@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { MCPTestClient } from './utils/mcp-client.js';
-import { getSharedMock, cleanupSharedMock, getMockCliPath } from './utils/persistent-mock.js';
+import { getSharedMock, getMockCliPath } from './utils/persistent-mock.js';
 
 describe('Claude Code MCP E2E Tests', () => {
   let client: MCPTestClient;
@@ -33,11 +33,8 @@ describe('Claude Code MCP E2E Tests', () => {
     // Clean up test directory
     rmSync(testDir, { recursive: true, force: true });
   });
-  
-  afterAll(async () => {
-    // Only cleanup mock at the very end
-    await cleanupSharedMock();
-  });
+  // Note: Mock cleanup is handled by global setup.ts, not here
+  // to avoid race conditions with parallel test files
 
   describe('Tool Registration', () => {
     it('should register claude_code tool', async () => {
