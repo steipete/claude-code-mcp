@@ -7,7 +7,10 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 // Mock dependencies
 vi.mock('node:child_process');
 vi.mock('node:fs');
-vi.mock('node:os');
+vi.mock('node:os', () => ({
+  homedir: vi.fn(() => '/home/user'),
+  tmpdir: vi.fn(() => '/tmp'),
+}));
 vi.mock('@modelcontextprotocol/sdk/server/index.js', () => ({
   Server: vi.fn()
 }));

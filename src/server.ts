@@ -94,8 +94,13 @@ interface ClaudeCodeArgs {
 export async function spawnAsync(command: string, args: string[], options?: { timeout?: number, cwd?: string }): Promise<{ stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
     debugLog(`[Spawn] Running command: ${command} ${args.join(' ')}`);
-    const process = spawn(command, args, {
-      shell: false, // Reverted to false
+
+    // On Windows, .cmd/.bat files need shell: true to execute properly
+    const needsShell = process.platform === 'win32' &&
+      (command.toLowerCase().endsWith('.cmd') || command.toLowerCase().endsWith('.bat'));
+
+    const childProcess = spawn(command, args, {
+      shell: needsShell,
       timeout: options?.timeout,
       cwd: options?.cwd,
       stdio: ['ignore', 'pipe', 'pipe']
@@ -104,13 +109,13 @@ export async function spawnAsync(command: string, args: string[], options?: { ti
     let stdout = '';
     let stderr = '';
 
-    process.stdout.on('data', (data) => { stdout += data.toString(); });
-    process.stderr.on('data', (data) => {
+    childProcess.stdout.on('data', (data) => { stdout += data.toString(); });
+    childProcess.stderr.on('data', (data) => {
       stderr += data.toString();
       debugLog(`[Spawn Stderr Chunk] ${data.toString()}`);
     });
 
-    process.on('error', (error: NodeJS.ErrnoException) => {
+    childProcess.on('error', (error: NodeJS.ErrnoException) => {
       debugLog(`[Spawn Error Event] Full error object:`, error);
       let errorMessage = `Spawn error: ${error.message}`;
       if (error.path) {
@@ -123,7 +128,7 @@ export async function spawnAsync(command: string, args: string[], options?: { ti
       reject(new Error(errorMessage));
     });
 
-    process.on('close', (code) => {
+    childProcess.on('close', (code) => {
       debugLog(`[Spawn Close] Exit code: ${code}`);
       debugLog(`[Spawn Stderr Full] ${stderr.trim()}`);
       debugLog(`[Spawn Stdout Full] ${stdout.trim()}`);

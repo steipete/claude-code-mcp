@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { MCPTestClient } from './utils/mcp-client.js';
-import { getSharedMock, cleanupSharedMock } from './utils/persistent-mock.js';
+import { getSharedMock, cleanupSharedMock, getMockCliPath } from './utils/persistent-mock.js';
 
 describe('Claude Code Edge Cases', () => {
   let client: MCPTestClient;
@@ -13,16 +13,16 @@ describe('Claude Code Edge Cases', () => {
   beforeEach(async () => {
     // Ensure mock exists
     await getSharedMock();
-    
+
     // Create test directory
     testDir = mkdtempSync(join(tmpdir(), 'claude-code-edge-'));
-    
-    // Initialize client with custom binary name using absolute path
+
+    // Initialize client with custom binary name using dynamic path
     client = new MCPTestClient(serverPath, {
       MCP_CLAUDE_DEBUG: 'true',
-      CLAUDE_CLI_NAME: '/tmp/claude-code-test-mock/claudeMocked',
+      CLAUDE_CLI_NAME: getMockCliPath(),
     });
-    
+
     await client.connect();
   });
 

@@ -9,7 +9,10 @@ import { EventEmitter } from 'node:events';
 // Mock dependencies
 vi.mock('node:child_process');
 vi.mock('node:fs');
-vi.mock('node:os');
+vi.mock('node:os', () => ({
+  homedir: vi.fn(() => '/home/user'),
+  tmpdir: vi.fn(() => '/tmp'),
+}));
 vi.mock('@modelcontextprotocol/sdk/server/stdio.js');
 vi.mock('@modelcontextprotocol/sdk/types.js', () => ({
   ListToolsRequestSchema: { name: 'listTools' },
