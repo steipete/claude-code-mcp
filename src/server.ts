@@ -37,49 +37,79 @@ export function debugLog(message?: any, ...optionalParams: any[]): void {
 
 /**
  * Determine the Claude CLI command/path.
- * 1. Checks for CLAUDE_CLI_NAME environment variable:
- *    - If absolute path, uses it directly
- *    - If relative path, throws error
- *    - If simple name, continues with path resolution
- * 2. Checks for Claude CLI at the local user path: ~/.claude/local/claude.
- * 3. If not found, defaults to the CLI name (or 'claude'), relying on the system's PATH for lookup.
+ * 1. Checks CLAUDE_CLI_PATH env var (absolute path to the CLI binary).
+ * 2. Checks CLAUDE_CLI_NAME env var (custom binary name or absolute path).
+ * 3. Checks local user path: ~/.claude/local/claude (+ .cmd/.exe on Windows).
+ * 4. Falls back to the CLI name (or 'claude'), relying on the system's PATH.
  */
 export function findClaudeCli(): string {
   debugLog('[Debug] Attempting to find Claude CLI...');
+  const isWindows = process.platform === 'win32';
 
-  // Check for custom CLI name from environment variable
+  // 1. Check CLAUDE_CLI_PATH first (explicit absolute path to the binary)
+  const cliPath = process.env.CLAUDE_CLI_PATH;
+  if (cliPath) {
+    debugLog(`[Debug] CLAUDE_CLI_PATH is set: ${cliPath}`);
+    if (existsSync(cliPath)) {
+      debugLog(`[Debug] Found Claude CLI at CLAUDE_CLI_PATH: ${cliPath}`);
+      return cliPath;
+    }
+    console.warn(`[Warning] CLAUDE_CLI_PATH is set to "${cliPath}" but file does not exist. Continuing with other methods.`);
+  }
+
+  // 2. Check for custom CLI name from environment variable
   const customCliName = process.env.CLAUDE_CLI_NAME;
   if (customCliName) {
     debugLog(`[Debug] Using custom Claude CLI name from CLAUDE_CLI_NAME: ${customCliName}`);
-    
+
     // If it's an absolute path, use it directly
     if (path.isAbsolute(customCliName)) {
       debugLog(`[Debug] CLAUDE_CLI_NAME is an absolute path: ${customCliName}`);
       return customCliName;
     }
-    
+
     // If it starts with ~ or ./, reject as relative paths are not allowed
     if (customCliName.startsWith('./') || customCliName.startsWith('../') || customCliName.includes('/')) {
       throw new Error(`Invalid CLAUDE_CLI_NAME: Relative paths are not allowed. Use either a simple name (e.g., 'claude') or an absolute path (e.g., '/tmp/claude-test')`);
     }
   }
-  
+
   const cliName = customCliName || 'claude';
 
-  // Try local install path: ~/.claude/local/claude (using the original name for local installs)
+  // 3. Try local install path: ~/.claude/local/claude
+  //    On Windows, also check .cmd and .exe extensions since npm installs create .cmd wrappers
   const userPath = join(homedir(), '.claude', 'local', 'claude');
-  debugLog(`[Debug] Checking for Claude CLI at local user path: ${userPath}`);
+  const candidatePaths = isWindows
+    ? [userPath, `${userPath}.cmd`, `${userPath}.exe`]
+    : [userPath];
 
-  if (existsSync(userPath)) {
-    debugLog(`[Debug] Found Claude CLI at local user path: ${userPath}. Using this path.`);
-    return userPath;
-  } else {
-    debugLog(`[Debug] Claude CLI not found at local user path: ${userPath}.`);
+  for (const candidate of candidatePaths) {
+    debugLog(`[Debug] Checking for Claude CLI at: ${candidate}`);
+    if (existsSync(candidate)) {
+      debugLog(`[Debug] Found Claude CLI at: ${candidate}`);
+      return candidate;
+    }
+  }
+  debugLog(`[Debug] Claude CLI not found at local user path: ${userPath}`);
+
+  // 4. On Windows, also check common npm global install locations
+  if (isWindows) {
+    const npmGlobalPaths = [
+      join(homedir(), 'AppData', 'Roaming', 'npm', 'claude.cmd'),
+      join(homedir(), 'AppData', 'Roaming', 'npm', 'claude.exe'),
+    ];
+    for (const npmPath of npmGlobalPaths) {
+      debugLog(`[Debug] Checking Windows npm global path: ${npmPath}`);
+      if (existsSync(npmPath)) {
+        debugLog(`[Debug] Found Claude CLI at npm global path: ${npmPath}`);
+        return npmPath;
+      }
+    }
   }
 
-  // 3. Fallback to CLI name (PATH lookup)
+  // 5. Fallback to CLI name (PATH lookup)
   debugLog(`[Debug] Falling back to "${cliName}" command name, relying on spawn/PATH lookup.`);
-  console.warn(`[Warning] Claude CLI not found at ~/.claude/local/claude. Falling back to "${cliName}" in PATH. Ensure it is installed and accessible.`);
+  console.warn(`[Warning] Claude CLI not found at local paths. Falling back to "${cliName}" in PATH. Ensure it is installed and accessible.`);
   return cliName;
 }
 

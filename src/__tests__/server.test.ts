@@ -99,6 +99,7 @@ describe('ClaudeCodeServer Unit Tests', () => {
     consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     // Reset env to original
     process.env = { ...originalEnv };
+    delete process.env.CLAUDE_CLI_PATH;
     delete process.env.CLAUDE_CLI_NAME;
     delete process.env.MCP_CLAUDE_DEBUG;
   });
@@ -174,7 +175,36 @@ describe('ClaudeCodeServer Unit Tests', () => {
       const result = findClaudeCli();
       expect(result).toBe('claude');
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Claude CLI not found at ~/.claude/local/claude')
+        expect.stringContaining('Claude CLI not found at local paths')
+      );
+    });
+
+    it('should use CLAUDE_CLI_PATH when set and file exists', async () => {
+      process.env.CLAUDE_CLI_PATH = '/custom/path/to/claude';
+      mockExistsSync.mockImplementation((p) => {
+        if (p === '/custom/path/to/claude') return true;
+        return false;
+      });
+
+      const module = await import('../server.js');
+      const { findClaudeCli } = module;
+
+      const result = findClaudeCli();
+      expect(result).toBe('/custom/path/to/claude');
+    });
+
+    it('should warn and continue when CLAUDE_CLI_PATH is set but file missing', async () => {
+      process.env.CLAUDE_CLI_PATH = '/nonexistent/claude';
+      mockHomedir.mockReturnValue('/home/user');
+      mockExistsSync.mockReturnValue(false);
+
+      const module = await import('../server.js');
+      const { findClaudeCli } = module;
+
+      const result = findClaudeCli();
+      expect(result).toBe('claude');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('CLAUDE_CLI_PATH is set to')
       );
     });
 
@@ -211,8 +241,10 @@ describe('ClaudeCodeServer Unit Tests', () => {
       mockHomedir.mockReturnValue('/home/user');
       mockExistsSync.mockReturnValue(true);
 
-      // The error is thrown during module import since ClaudeCodeServer is auto-instantiated
-      await expect(import('../server.js')).rejects.toThrow('Invalid CLAUDE_CLI_NAME: Relative paths are not allowed');
+      const module = await import('../server.js');
+      const { findClaudeCli } = module;
+
+      expect(() => findClaudeCli()).toThrow('Invalid CLAUDE_CLI_NAME: Relative paths are not allowed');
     });
 
     it('should throw error for paths with ../ in CLAUDE_CLI_NAME', async () => {
@@ -220,8 +252,10 @@ describe('ClaudeCodeServer Unit Tests', () => {
       mockHomedir.mockReturnValue('/home/user');
       mockExistsSync.mockReturnValue(true);
 
-      // The error is thrown during module import since ClaudeCodeServer is auto-instantiated
-      await expect(import('../server.js')).rejects.toThrow('Invalid CLAUDE_CLI_NAME: Relative paths are not allowed');
+      const module = await import('../server.js');
+      const { findClaudeCli } = module;
+
+      expect(() => findClaudeCli()).toThrow('Invalid CLAUDE_CLI_NAME: Relative paths are not allowed');
     });
   });
 
