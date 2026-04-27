@@ -2,12 +2,29 @@
   "name": "@steipete/claude-code-mcp",
   "version": "1.11.0",
   "description": "Simple MCP server for Claude Code one-shot execution",
-  "author": "Peter Steinberger",
+  "keywords": [
+    "ai",
+    "claude",
+    "llm",
+    "mcp",
+    "model-context-protocol",
+    "tools"
+  ],
+  "homepage": "https://github.com/steipete/claude-code-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/steipete/claude-code-mcp/issues"
+  },
   "license": "MIT",
-  "main": "dist/server.js",
+  "author": "Peter Steinberger",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/steipete/claude-code-mcp.git"
+  },
   "bin": {
     "claude-code-mcp": "dist/server.js"
   },
+  "type": "module",
+  "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
@@ -16,37 +33,25 @@
     "test:unit": "vitest run --config vitest.config.unit.ts",
     "test:e2e": "npm run build && vitest run --config vitest.config.e2e.ts",
     "test:coverage": "npm run build && vitest --coverage --config vitest.config.unit.ts",
-    "test:watch": "vitest --watch"
+    "test:watch": "vitest --watch",
+    "typecheck": "tsgo --noEmit",
+    "format": "oxfmt --write .",
+    "format:check": "oxfmt --check .",
+    "lint": "npm run format:check && oxlint --deny-warnings --allow eslint/no-unused-vars src test tests"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.11.2",
-    "zod": "^3.24.4"
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.3.6"
   },
-  "type": "module",
   "devDependencies": {
-    "@eslint/js": "^9.26.0",
-    "@types/node": "^22.15.20",
+    "@types/node": "^25.6.0",
     "@types/which": "^3.0.4",
-    "@vitest/coverage-v8": "^2.1.8",
-    "tsx": "^4.19.4",
-    "typescript": "^5.8.3",
-    "vitest": "^2.1.8",
-    "which": "^5.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/steipete/claude-code-mcp.git"
-  },
-  "keywords": [
-    "mcp",
-    "model-context-protocol",
-    "claude",
-    "ai",
-    "llm",
-    "tools"
-  ],
-  "bugs": {
-    "url": "https://github.com/steipete/claude-code-mcp/issues"
-  },
-  "homepage": "https://github.com/steipete/claude-code-mcp#readme"
+    "@vitest/coverage-v8": "^4.1.5",
+    "oxfmt": "^0.46.0",
+    "oxlint": "^1.61.0",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5",
+    "which": "^6.0.1"
+  }
 }

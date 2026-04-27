@@ -5,10 +5,12 @@ This document describes the release process for claude-code-mcp to ensure qualit
 ## Pre-release Testing
 
 1. **Local Testing**
+
    ```bash
    # Run the test release script
    ./scripts/test-release.sh
    ```
+
    This will:
    - Build the project
    - Run all tests
@@ -35,6 +37,7 @@ Once local testing is complete:
 ```
 
 This will:
+
 1. Ensure you're on main branch
 2. Run tests
 3. Build the project
@@ -48,6 +51,7 @@ This will:
 ## Emergency Fixes
 
 For critical fixes:
+
 1. Fix the issue
 2. Test locally with `./scripts/test-release.sh`
 3. Once verified, use `./scripts/publish-release.sh` with patch version

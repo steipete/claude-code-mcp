@@ -43,16 +43,16 @@ This MCP server provides one tool that can be used by LLMs to interact with Clau
   - Using custom Claude CLI wrappers
   - Testing with mocked binaries
   - Running multiple Claude CLI versions side by side
-  
+
   Supported formats:
   - Simple name: `CLAUDE_CLI_NAME=claude-custom` or `CLAUDE_CLI_NAME=claude-v2`
   - Absolute path: `CLAUDE_CLI_NAME=/path/to/custom/claude`
-  
+
   Relative paths (e.g., `./claude` or `../claude`) are not allowed and will throw an error.
-  
+
   When set to a simple name, the server will look for the specified binary in:
   1. The system PATH (instead of the default `claude` command)
-  
+
   Note: The local user installation path (`~/.claude/local/claude`) will still be checked but only for the default `claude` binary.
 
 - `MCP_CLAUDE_DEBUG`: Enable debug logging (set to `true` for verbose output)
@@ -112,6 +112,7 @@ This is a one-time requirement by the Claude CLI.
 ```bash
 npm install -g @anthropic-ai/claude-code
 ```
+
 ```bash
 claude --dangerously-skip-permissions
 ```
@@ -131,6 +132,7 @@ The configuration is typically done in a JSON file. The name and location can va
 #### Cursor
 
 Cursor uses `mcp.json`.
+
 - **macOS:** `~/.cursor/mcp.json`
 - **Windows:** `%APPDATA%\\Cursor\\mcp.json`
 - **Linux:** `~/.config/cursor/mcp.json`
@@ -138,6 +140,7 @@ Cursor uses `mcp.json`.
 #### Windsurf
 
 Windsurf users use `mcp_config.json`
+
 - **macOS:** `~/.codeium/windsurf/mcp_config.json`
 - **Windows:** `%APPDATA%\\Codeium\\windsurf\\mcp_config.json`
 - **Linux:** `~/.config/.codeium/windsurf/mcp_config.json`
@@ -155,11 +158,13 @@ This server exposes one primary tool:
 Executes a prompt directly using the Claude Code CLI with `--dangerously-skip-permissions`.
 
 **Arguments:**
+
 - `prompt` (string, required): The prompt to send to Claude Code.
 - `options` (object, optional):
   - `tools` (array of strings, optional): Specific Claude tools to enable (e.g., `Bash`, `Read`, `Write`). Common tools are enabled by default.
 
 **Example MCP Request:**
+
 ```json
 {
   "toolName": "claude_code:claude_code",
@@ -196,37 +201,37 @@ Here's an example of the Claude Code tool listing files in a directory:
 This server, through its unified `claude_code` tool, unlocks a wide range of powerful capabilities by giving your AI direct access to the Claude Code CLI. Here are some examples of what you can achieve:
 
 1.  **Code Generation, Analysis & Refactoring:**
-    -   `"Generate a Python script to parse CSV data and output JSON."`
-    -   `"Analyze my_script.py for potential bugs and suggest improvements."`
+    - `"Generate a Python script to parse CSV data and output JSON."`
+    - `"Analyze my_script.py for potential bugs and suggest improvements."`
 
 2.  **File System Operations (Create, Read, Edit, Manage):**
-    -   **Creating Files:** `"Your work folder is /Users/steipete/my_project\n\nCreate a new file named 'config.yml' in the 'app/settings' directory with the following content:\nport: 8080\ndatabase: main_db"`
-    -   **Editing Files:** `"Your work folder is /Users/steipete/my_project\n\nEdit file 'public/css/style.css': Add a new CSS rule at the end to make all 'h2' elements have a 'color: navy'."`
-    -   **Moving/Copying/Deleting:** `"Your work folder is /Users/steipete/my_project\n\nMove the file 'report.docx' from the 'drafts' folder to the 'final_reports' folder and rename it to 'Q1_Report_Final.docx'."`
+    - **Creating Files:** `"Your work folder is /Users/steipete/my_project\n\nCreate a new file named 'config.yml' in the 'app/settings' directory with the following content:\nport: 8080\ndatabase: main_db"`
+    - **Editing Files:** `"Your work folder is /Users/steipete/my_project\n\nEdit file 'public/css/style.css': Add a new CSS rule at the end to make all 'h2' elements have a 'color: navy'."`
+    - **Moving/Copying/Deleting:** `"Your work folder is /Users/steipete/my_project\n\nMove the file 'report.docx' from the 'drafts' folder to the 'final_reports' folder and rename it to 'Q1_Report_Final.docx'."`
 
 3.  **Version Control (Git):**
-    -   `"Your work folder is /Users/steipete/my_project\n\n1. Stage the file 'src/main.java'.\n2. Commit the changes with the message 'feat: Implement user authentication'.\n3. Push the commit to the 'develop' branch on origin."`
+    - `"Your work folder is /Users/steipete/my_project\n\n1. Stage the file 'src/main.java'.\n2. Commit the changes with the message 'feat: Implement user authentication'.\n3. Push the commit to the 'develop' branch on origin."`
 
 4.  **Running Terminal Commands:**
-    -   `"Your work folder is /Users/steipete/my_project/frontend\n\nRun the command 'npm run build'."`
-    -   `"Open the URL https://developer.mozilla.org in my default web browser."`
+    - `"Your work folder is /Users/steipete/my_project/frontend\n\nRun the command 'npm run build'."`
+    - `"Open the URL https://developer.mozilla.org in my default web browser."`
 
 5.  **Web Search & Summarization:**
-    -   `"Search the web for 'benefits of server-side rendering' and provide a concise summary."`
+    - `"Search the web for 'benefits of server-side rendering' and provide a concise summary."`
 
 6.  **Complex Multi-Step Workflows:**
-    -   Automate version bumps, update changelogs, and tag releases: `"Your work folder is /Users/steipete/my_project\n\nFollow these steps: 1. Update the version in package.json to 2.5.0. 2. Add a new section to CHANGELOG.md for version 2.5.0 with the heading '### Added' and list 'New feature X'. 3. Stage package.json and CHANGELOG.md. 4. Commit with message 'release: version 2.5.0'. 5. Push the commit. 6. Create and push a git tag v2.5.0."`
+    - Automate version bumps, update changelogs, and tag releases: `"Your work folder is /Users/steipete/my_project\n\nFollow these steps: 1. Update the version in package.json to 2.5.0. 2. Add a new section to CHANGELOG.md for version 2.5.0 with the heading '### Added' and list 'New feature X'. 3. Stage package.json and CHANGELOG.md. 4. Commit with message 'release: version 2.5.0'. 5. Push the commit. 6. Create and push a git tag v2.5.0."`
 
     <img src="assets/multistep_example.png" alt="Complex multi-step operation example" width="50%">
 
 7.  **Repairing Files with Syntax Errors:**
-    -   `"Your work folder is /path/to/project\n\nThe file 'src/utils/parser.js' has syntax errors after a recent complex edit that broke its structure. Please analyze it, identify the syntax errors, and correct the file to make it valid JavaScript again, ensuring the original logic is preserved as much as possible."`
+    - `"Your work folder is /path/to/project\n\nThe file 'src/utils/parser.js' has syntax errors after a recent complex edit that broke its structure. Please analyze it, identify the syntax errors, and correct the file to make it valid JavaScript again, ensuring the original logic is preserved as much as possible."`
 
 8.  **Interacting with GitHub (e.g., Creating a Pull Request):**
-    -   `"Your work folder is /Users/steipete/my_project\n\nCreate a GitHub Pull Request in the repository 'owner/repo' from the 'feature-branch' to the 'main' branch. Title: 'feat: Implement new login flow'. Body: 'This PR adds a new and improved login experience for users.'"`
+    - `"Your work folder is /Users/steipete/my_project\n\nCreate a GitHub Pull Request in the repository 'owner/repo' from the 'feature-branch' to the 'main' branch. Title: 'feat: Implement new login flow'. Body: 'This PR adds a new and improved login experience for users.'"`
 
 9.  **Interacting with GitHub (e.g., Checking PR CI Status):**
-    -   `"Your work folder is /Users/steipete/my_project\n\nCheck the status of CI checks for Pull Request #42 in the GitHub repository 'owner/repo'. Report if they have passed, failed, or are still running."`
+    - `"Your work folder is /Users/steipete/my_project\n\nCheck the status of CI checks for Pull Request #42 in the GitHub repository 'owner/repo'. Report if they have passed, failed, or are still running."`
 
 ### Correcting GitHub Actions Workflow
 

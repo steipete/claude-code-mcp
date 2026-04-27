@@ -1,4 +1,4 @@
-import { vi, afterEach } from 'vitest';
+import { vi, afterEach } from "vitest";
 
 // Clear all mocks after each test
 afterEach(() => {
@@ -6,9 +6,9 @@ afterEach(() => {
 });
 
 // Mock for the MCP SDK Server - must be at the top level
-vi.mock('@modelcontextprotocol/sdk/server/index.js', () => {
+vi.mock("@modelcontextprotocol/sdk/server/index.js", () => {
   const MockServerClass = vi.fn().mockImplementation(() => {
-    console.log('MockServerClass instantiated');
+    console.log("MockServerClass instantiated");
     const mockInstance = {
       __isGlobalMock: true,
       connect: vi.fn().mockResolvedValue(undefined),
@@ -25,8 +25,8 @@ vi.mock('@modelcontextprotocol/sdk/server/index.js', () => {
     };
     return mockInstance;
   });
-  
+
   return { Server: MockServerClass };
 });
 
-console.log('Global test setup complete with SDK Server mock.'); 
+console.log("Global test setup complete with SDK Server mock.");

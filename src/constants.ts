@@ -35,4 +35,4 @@ export const CLAUDE_CODE_TOOL_DESCRIPTION_TEMPLATE = `Claude Code Agent: Your ve
 
 ---
 MCP Server Version: {{SERVER_VERSION}}
-Claude CLI Version: {{CLAUDE_CLI_VERSION}}`; 
+Claude CLI Version: {{CLAUDE_CLI_VERSION}}`;

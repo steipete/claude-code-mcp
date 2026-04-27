@@ -4,4 +4,4 @@
 export interface ClaudeCodeArgs {
   prompt: string;
   workFolder?: string;
-} 
+}

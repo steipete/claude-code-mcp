@@ -50,17 +50,20 @@ The integration tests are marked with `.skip()` by default and will only run whe
 ## Test Scenarios
 
 ### Basic Operations
+
 - Tool registration and discovery
 - Simple prompt execution
 - Error handling
 - Default working directory behavior
 
 ### Working Directory Handling
+
 - Custom working directory support
 - Non-existent directory handling
 - Permission errors
 
 ### Edge Cases
+
 - Input validation (missing/invalid parameters)
 - Special characters in prompts
 - Concurrent request handling
@@ -68,6 +71,7 @@ The integration tests are marked with `.skip()` by default and will only run whe
 - Path traversal prevention
 
 ### Integration Tests (Local Only)
+
 - File creation with real Claude CLI
 - Git operations
 - Complex multi-step workflows
@@ -94,9 +98,9 @@ When adding new e2e tests:
 Example:
 
 ```typescript
-it('should handle complex file operations', async () => {
-  const response = await client.callTool('claude_code', {
-    prompt: 'Create multiple files and organize them',
+it("should handle complex file operations", async () => {
+  const response = await client.callTool("claude_code", {
+    prompt: "Create multiple files and organize them",
     workFolder: testDir,
   });
 
@@ -126,16 +130,19 @@ The e2e tests are designed to run in CI environments without Claude CLI:
 ## Common Issues
 
 ### Tests Timing Out
+
 - Increase timeout in `vitest.config.e2e.ts`
 - Check if the mock Claude CLI is set up correctly
 - Verify the server is building properly
 
 ### Mock Not Found
+
 - Ensure the mock setup runs in `beforeAll`
 - Check file permissions on the mock executable
 - Verify the mock path matches the server's expectations
 
 ### Integration Tests Failing
+
 - Ensure Claude CLI is installed and authenticated
 - Check that you're running the local test command
 - Verify Claude CLI is accessible in your PATH

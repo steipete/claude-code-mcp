@@ -9,6 +9,7 @@ For general users, the recommended methods (global NPM install or `npx`) are cov
 This method is suitable if you prefer not to install the server globally or want to manage it directly within a specific path for development or testing.
 
 1.  **Clone the repository:**
+
     ```bash
     git clone https://github.com/steipete/claude-code-mcp.git # Or your fork/actual repo URL
     cd claude-code-mcp
@@ -16,17 +17,20 @@ This method is suitable if you prefer not to install the server globally or want
 
 2.  **Install dependencies:**
     This will also install `tsx` for direct TypeScript execution via `start.sh`.
+
     ```bash
     npm install
     ```
 
 3.  **Make the start script executable:**
+
     ```bash
     chmod +x start.sh
     ```
 
 4.  **Configure MCP Client for `start.sh`:**
     Update your `mcp.json` file (e.g., `~/.codeium/windsurf/mcp_config.json` or `~/.cursor/mcp.json`) to point to the `start.sh` script:
+
     ```json
     {
       "mcpServers": {
@@ -39,10 +43,12 @@ This method is suitable if you prefer not to install the server globally or want
       }
     }
     ```
+
     **Important:** Replace `/absolute/path/to/claude-mcp-server` with the actual absolute path to where you cloned the server.
 
 5.  **First-Time Claude CLI Permissions:**
     As mentioned in the main README, ensure you've run the Claude CLI once with `--dangerously-skip-permissions` to accept terms:
+
     ```bash
     claude -p "hello" --dangerously-skip-permissions
     # Or ~/.claude/local/claude -p "hello" --dangerously-skip-permissions
@@ -54,19 +60,21 @@ This method is suitable if you prefer not to install the server globally or want
     - `MCP_CLAUDE_DEBUG`: Set to `true` to enable verbose debug logging from the MCP server.
     - `CLAUDE_CLI_TOOLS_DEFAULT`: Comma-separated list of default tools.
     - `CLAUDE_CLI_TOOLS_DANGEROUS`: Comma-separated list of tools to always enable.
-    Refer to `start.sh` and the main README's "Configuration via Environment Variables" section for more details.
+      Refer to `start.sh` and the main README's "Configuration via Environment Variables" section for more details.
 
 ## Option 2: Local Development with `npm link`
 
 This method allows you to install the package globally but have it point to your local cloned repository. This is useful for testing the global command (`claude-code-mcp`) with your local changes.
 
 1.  **Clone the repository (if not already done):**
+
     ```bash
     git clone https://github.com/steipete/claude-code-mcp.git # Or your fork/actual repo URL
     cd claude-code-mcp
     ```
 
 2.  **Install dependencies and build:**
+
     ```bash
     npm install       # Install dependencies
     npm run build     # Compile TypeScript to the dist/ directory
@@ -74,13 +82,16 @@ This method allows you to install the package globally but have it point to your
 
 3.  **Link the package:**
     This makes `claude-code-mcp` (as defined in `package.json`'s `bin` field) available globally, pointing to your local `dist/server.js`.
+
     ```bash
     npm link
     ```
+
     After linking, running `claude-code-mcp` in your terminal will execute your local build.
 
 4.  **Configure MCP Client for Linked Command:**
     Update your `mcp.json` file to use the `claude-code-mcp` command (which now points to your local linked version):
+
     ```json
     {
       "mcpServers": {
