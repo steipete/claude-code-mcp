@@ -26,18 +26,18 @@
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsgo",
     "start": "node dist/server.js",
     "dev": "tsx src/server.ts",
-    "test": "npm run build && vitest run",
+    "test": "pnpm run build && vitest run",
     "test:unit": "vitest run --config vitest.config.unit.ts",
-    "test:e2e": "npm run build && vitest run --config vitest.config.e2e.ts",
-    "test:coverage": "npm run build && vitest --coverage --config vitest.config.unit.ts",
+    "test:e2e": "pnpm run build && vitest run --config vitest.config.e2e.ts",
+    "test:coverage": "pnpm run build && vitest --coverage --config vitest.config.unit.ts",
     "test:watch": "vitest --watch",
     "typecheck": "tsgo --noEmit",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
-    "lint": "npm run format:check && oxlint --deny-warnings --allow eslint/no-unused-vars src test tests"
+    "lint": "pnpm run format:check && oxlint --deny-warnings --allow eslint/no-unused-vars src test tests"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
@@ -53,5 +53,6 @@
     "typescript": "^6.0.3",
     "vitest": "^4.1.5",
     "which": "^6.0.1"
-  }
+  },
+  "packageManager": "pnpm@10.33.2"
 }
