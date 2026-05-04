@@ -22,8 +22,5 @@ export async function getSharedMock(): Promise<ClaudeMock> {
 }
 
 export async function cleanupSharedMock(): Promise<void> {
-  if (sharedMock) {
-    await sharedMock.cleanup();
-    sharedMock = null;
-  }
+  sharedMock = null;
 }
