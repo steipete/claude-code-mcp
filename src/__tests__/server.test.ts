@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -49,6 +49,9 @@ vi.mock('../../package.json', () => ({
 
 // Get mocked functions
 const mockExistsSync = vi.mocked(existsSync);
+const mockMkdirSync = vi.mocked(mkdirSync);
+const mockReadFileSync = vi.mocked(readFileSync);
+const mockWriteFileSync = vi.mocked(writeFileSync);
 const mockSpawn = vi.mocked(spawn);
 const mockHomedir = vi.mocked(homedir);
 
@@ -102,6 +105,11 @@ describe('ClaudeCodeServer Unit Tests', () => {
     delete process.env.CLAUDE_CLI_PATH;
     delete process.env.CLAUDE_CLI_NAME;
     delete process.env.MCP_CLAUDE_DEBUG;
+    mockReadFileSync.mockImplementation(() => {
+      throw new Error('not found');
+    });
+    mockMkdirSync.mockReturnValue(undefined as any);
+    mockWriteFileSync.mockReturnValue(undefined);
   });
 
   afterEach(() => {
@@ -512,6 +520,124 @@ describe('ClaudeCodeServer Unit Tests', () => {
       const result = await promise;
       expect(result.content[0].type).toBe('text');
       expect(result.content[0].text).toBe('tool output');
+    });
+
+    it('should inject first-call context and persist Claude session mapping', async () => {
+      mockHomedir.mockReturnValue('/home/user');
+      mockExistsSync.mockImplementation((value) => {
+        const path = String(value);
+        return path === '/home/user/.claude/local/claude' || path === '/tmp';
+      });
+
+      const module = await import('../server.js');
+      const { ClaudeCodeServer } = module;
+      const server = new ClaudeCodeServer();
+      const mockServerInstance = vi.mocked(Server).mock.results[0].value;
+      const callToolCall = mockServerInstance.setRequestHandler.mock.calls.find(
+        (call: any[]) => call[0].name === 'callTool'
+      );
+      const handler = callToolCall[1];
+      const mockProcess = createMockProcess();
+      mockSpawn.mockReturnValue(mockProcess);
+
+      const promise = handler({
+        params: {
+          name: 'claude_code',
+          arguments: {
+            prompt: '/review the diff',
+            workFolder: '/tmp',
+            sessionId: 'parent-session',
+            messages: [
+              { role: 'user', content: 'Please inspect carefully.' },
+              { role: 'assistant', content: 'I will review the code.' },
+            ],
+          },
+        },
+      });
+
+      setTimeout(() => {
+        mockProcess.stdout['data'](
+          JSON.stringify({
+            type: 'result',
+            result: 'done',
+            session_id: 'claude-session',
+          })
+        );
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      const result = await promise;
+      const spawnArgs = mockSpawn.mock.calls[0][1] as string[];
+      expect(spawnArgs).toContain('--output-format');
+      expect(spawnArgs).not.toContain('--resume');
+      expect(spawnArgs.at(-1)).toContain('<conversation_context>');
+      expect(spawnArgs.at(-1)).toContain('@review the diff');
+      expect(result.content[0].text).toBe('done');
+      expect(result.content[1].text).toContain('claude-session');
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        '/home/user/.config/claude-code-mcp/sessions.json',
+        expect.stringContaining('claude-session'),
+        { mode: 0o600 }
+      );
+    });
+
+    it('should resume existing Claude sessions by parent sessionId', async () => {
+      mockHomedir.mockReturnValue('/home/user');
+      mockExistsSync.mockImplementation((value) => {
+        const path = String(value);
+        return (
+          path === '/home/user/.claude/local/claude' ||
+          path === '/tmp' ||
+          path === '/home/user/.config/claude-code-mcp/sessions.json'
+        );
+      });
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          'parent-session': {
+            claudeSessionId: 'claude-old',
+            updatedAt: new Date().toISOString(),
+          },
+        }) as any
+      );
+
+      const module = await import('../server.js');
+      const { ClaudeCodeServer } = module;
+      const server = new ClaudeCodeServer();
+      const mockServerInstance = vi.mocked(Server).mock.results[0].value;
+      const callToolCall = mockServerInstance.setRequestHandler.mock.calls.find(
+        (call: any[]) => call[0].name === 'callTool'
+      );
+      const handler = callToolCall[1];
+      const mockProcess = createMockProcess();
+      mockSpawn.mockReturnValue(mockProcess);
+
+      const promise = handler({
+        params: {
+          name: 'claude_code',
+          arguments: {
+            prompt: 'continue',
+            workFolder: '/tmp',
+            sessionId: 'parent-session',
+          },
+        },
+      });
+
+      setTimeout(() => {
+        mockProcess.stdout['data'](
+          JSON.stringify({
+            type: 'result',
+            result: 'continued',
+            session_id: 'claude-new',
+          })
+        );
+        mockProcess.emit('close', 0);
+      }, 10);
+
+      await promise;
+      const spawnArgs = mockSpawn.mock.calls[0][1] as string[];
+      expect(spawnArgs).toContain('--resume');
+      expect(spawnArgs).toContain('claude-old');
+      expect(spawnArgs.at(-1)).toBe('continue');
     });
 
     it('should handle non-existent workFolder', async () => {

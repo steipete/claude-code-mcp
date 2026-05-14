@@ -139,8 +139,10 @@ Executes a prompt directly using the Claude Code CLI with `--dangerously-skip-pe
 
 **Arguments:**
 - `prompt` (string, required): The prompt to send to Claude Code.
-- `options` (object, optional):
-  - `tools` (array of strings, optional): Specific Claude tools to enable (e.g., `Bash`, `Read`, `Write`). Common tools are enabled by default.
+- `workFolder` (string, optional): Absolute working directory for file operations.
+- `sessionId` (string, optional): Parent session ID. Repeated calls with the same ID resume the same Claude Code session.
+- `messages` (array, optional): Conversation history to inject on the first call for a session.
+- `stateless` (boolean, optional): Disable session continuity for this call.
 
 **Example MCP Request:**
 ```json

@@ -9,12 +9,11 @@ import {
   type ServerResult,
 } from '@modelcontextprotocol/sdk/types.js';
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve as pathResolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as path from 'path';
-import { readFileSync } from 'node:fs';
 
 // Server version - update this when releasing new versions
 const SERVER_VERSION = "1.10.12";
@@ -119,6 +118,130 @@ export function findClaudeCli(): string {
 interface ClaudeCodeArgs {
   prompt: string;
   workFolder?: string;
+  sessionId?: string;
+  messages?: ConversationMessage[];
+  stateless?: boolean;
+}
+
+interface ConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+interface ClaudeCliResponse {
+  type: string;
+  result?: string;
+  session_id?: string;
+}
+
+interface SessionEntry {
+  claudeSessionId: string;
+  updatedAt: string;
+}
+
+const MAX_SESSIONS = 1000;
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+const SESSION_FILE =
+  process.env.CLAUDE_CODE_MCP_SESSION_FILE ||
+  join(homedir(), '.config', 'claude-code-mcp', 'sessions.json');
+let sessionMap: Map<string, SessionEntry> | null = null;
+
+function ensureSessionMap(): Map<string, SessionEntry> {
+  if (sessionMap) return sessionMap;
+  sessionMap = new Map();
+  try {
+    if (existsSync(SESSION_FILE)) {
+      const parsed = JSON.parse(readFileSync(SESSION_FILE, 'utf8')) as Record<string, SessionEntry>;
+      sessionMap = new Map(Object.entries(parsed));
+      cleanExpiredSessions();
+    }
+  } catch (error) {
+    debugLog('[Debug] Failed to load Claude session map:', error);
+    sessionMap = new Map();
+  }
+  return sessionMap;
+}
+
+function saveSessionMap(): void {
+  const map = ensureSessionMap();
+  try {
+    mkdirSync(path.dirname(SESSION_FILE), { recursive: true });
+    writeFileSync(SESSION_FILE, JSON.stringify(Object.fromEntries(map), null, 2), {
+      mode: 0o600,
+    });
+  } catch (error) {
+    debugLog('[Debug] Failed to save Claude session map:', error);
+  }
+}
+
+function cleanExpiredSessions(): void {
+  const map = ensureSessionMap();
+  const now = Date.now();
+  let changed = false;
+  for (const [key, entry] of map) {
+    if (now - new Date(entry.updatedAt).getTime() > SESSION_TTL_MS) {
+      map.delete(key);
+      changed = true;
+    }
+  }
+  if (changed) saveSessionMap();
+}
+
+function getSessionMapping(parentSessionId: string): string | undefined {
+  const map = ensureSessionMap();
+  const entry = map.get(parentSessionId);
+  if (!entry) return undefined;
+  if (Date.now() - new Date(entry.updatedAt).getTime() > SESSION_TTL_MS) {
+    map.delete(parentSessionId);
+    saveSessionMap();
+    return undefined;
+  }
+  return entry.claudeSessionId;
+}
+
+function setSessionMapping(parentSessionId: string, claudeSessionId: string): void {
+  const map = ensureSessionMap();
+  if (map.size >= MAX_SESSIONS) {
+    const oldestKey = map.keys().next().value;
+    if (oldestKey) map.delete(oldestKey);
+  }
+  map.set(parentSessionId, {
+    claudeSessionId,
+    updatedAt: new Date().toISOString(),
+  });
+  saveSessionMap();
+}
+
+function formatConversationContext(messages: ConversationMessage[]): string {
+  if (messages.length === 0) return '';
+  const formatted = messages
+    .map((message) => {
+      const role = message.role === 'assistant' ? 'Assistant' : 'User';
+      return `[${role}]: ${message.content}`;
+    })
+    .join('\n\n');
+  return `<conversation_context>\n${formatted}\n</conversation_context>\n\n`;
+}
+
+function translateSlashCommands(prompt: string): string {
+  return prompt.replace(/^\/([a-zA-Z][a-zA-Z0-9_-]*)(?=\s|$)/gm, '@$1');
+}
+
+function parseClaudeResponse(stdout: string): ClaudeCliResponse | null {
+  const trimmed = stdout.trim();
+  const candidates = trimmed.startsWith('{') && trimmed.endsWith('}')
+    ? [trimmed]
+    : trimmed.split('\n').map((line) => line.trim()).filter((line) => line.startsWith('{') && line.endsWith('}')).reverse();
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate) as ClaudeCliResponse;
+      if (parsed.type === 'result') return parsed;
+    } catch {
+      // Try the next JSON-looking line.
+    }
+  }
+  return null;
 }
 
 // Ensure spawnAsync is defined correctly *before* the class
@@ -262,6 +385,32 @@ export class ClaudeCodeServer {
                 type: 'string',
                 description: 'Mandatory when using file operations or referencing any file. The working directory for the Claude CLI execution. Must be an absolute path.',
               },
+              sessionId: {
+                type: 'string',
+                description: 'Parent session ID. When provided, repeated calls resume the same Claude Code session.',
+              },
+              messages: {
+                type: 'array',
+                description: 'Conversation history to inject on the first call for a session.',
+                items: {
+                  type: 'object',
+                  properties: {
+                    role: {
+                      type: 'string',
+                      enum: ['user', 'assistant'],
+                    },
+                    content: {
+                      type: 'string',
+                    },
+                  },
+                  required: ['role', 'content'],
+                },
+              },
+              stateless: {
+                type: 'boolean',
+                description: 'Disable session continuity for this call.',
+                default: false,
+              },
             },
             required: ['prompt'],
           },
@@ -297,6 +446,30 @@ export class ClaudeCodeServer {
         throw new McpError(ErrorCode.InvalidParams, 'Missing or invalid required parameter: prompt (must be an object with a string "prompt" property) for claude_code tool');
       }
 
+      const sessionId = toolArguments.sessionId;
+      if (sessionId !== undefined && typeof sessionId !== 'string') {
+        throw new McpError(ErrorCode.InvalidParams, 'Invalid parameter: sessionId must be a string.');
+      }
+
+      const messages = toolArguments.messages;
+      if (messages !== undefined) {
+        if (!Array.isArray(messages)) {
+          throw new McpError(ErrorCode.InvalidParams, 'Invalid parameter: messages must be an array.');
+        }
+        for (const message of messages) {
+          if (
+            typeof message !== 'object' ||
+            message === null ||
+            (message.role !== 'user' && message.role !== 'assistant') ||
+            typeof message.content !== 'string'
+          ) {
+            throw new McpError(ErrorCode.InvalidParams, 'Invalid parameter: each message must include role and content strings.');
+          }
+        }
+      }
+
+      const stateless = toolArguments.stateless === true;
+
       // Determine the working directory
       let effectiveCwd = homedir(); // Default CWD is user's home directory
 
@@ -326,7 +499,23 @@ export class ClaudeCodeServer {
           isFirstToolUse = false;
         }
 
-        const claudeProcessArgs = ['--dangerously-skip-permissions', '-p', prompt];
+        let processedPrompt = translateSlashCommands(prompt);
+        const claudeProcessArgs = ['--dangerously-skip-permissions'];
+        const useSessionContinuity = !stateless && typeof sessionId === 'string' && sessionId.length > 0;
+
+        if (useSessionContinuity) {
+          const existingClaudeSessionId = getSessionMapping(sessionId);
+          claudeProcessArgs.push('--output-format', 'json');
+          if (existingClaudeSessionId) {
+            claudeProcessArgs.push('--resume', existingClaudeSessionId);
+          } else if (Array.isArray(messages) && messages.length > 0) {
+            processedPrompt = formatConversationContext(messages as ConversationMessage[]) +
+              'Continue the conversation. ' +
+              processedPrompt;
+          }
+        }
+
+        claudeProcessArgs.push('-p', processedPrompt);
         debugLog(`[Debug] Invoking Claude CLI: ${this.claudeCliPath} ${claudeProcessArgs.join(' ')}`);
 
         const { stdout, stderr } = await spawnAsync(
@@ -340,8 +529,27 @@ export class ClaudeCodeServer {
           debugLog('[Debug] Claude CLI stderr:', stderr.trim());
         }
 
-        // Return stdout content, even if there was stderr, as claude-cli might output main result to stdout.
-        return { content: [{ type: 'text', text: stdout }] };
+        if (!useSessionContinuity) {
+          // Return stdout content, even if there was stderr, as claude-cli might output main result to stdout.
+          return { content: [{ type: 'text', text: stdout }] };
+        }
+
+        const parsedResponse = parseClaudeResponse(stdout);
+        if (!parsedResponse) {
+          return { content: [{ type: 'text', text: stdout }] };
+        }
+
+        const resultText = parsedResponse.result ?? '';
+        const claudeSessionId = parsedResponse.session_id;
+        if (claudeSessionId) {
+          setSessionMapping(sessionId, claudeSessionId);
+        }
+
+        const content: { type: 'text'; text: string }[] = [{ type: 'text', text: resultText }];
+        if (claudeSessionId) {
+          content.push({ type: 'text', text: `\n---\n_Session ID: ${claudeSessionId}_` });
+        }
+        return { content };
 
       } catch (error: any) {
         debugLog('[Error] Error executing Claude CLI:', error);

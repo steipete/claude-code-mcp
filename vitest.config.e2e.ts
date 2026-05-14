@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    fileParallelism: false,
     testTimeout: 30000, // Longer timeout for e2e tests
     hookTimeout: 20000,
     setupFiles: ['./src/__tests__/setup.ts'],

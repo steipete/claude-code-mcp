@@ -44,9 +44,9 @@ describe('Claude Code MCP E2E Tests', () => {
       expect(tools[0]).toEqual({
         name: 'claude_code',
         description: expect.stringContaining('Claude Code Agent'),
-        inputSchema: {
+        inputSchema: expect.objectContaining({
           type: 'object',
-          properties: {
+          properties: expect.objectContaining({
             prompt: {
               type: 'string',
               description: 'The detailed natural language prompt for Claude to execute.',
@@ -55,9 +55,18 @@ describe('Claude Code MCP E2E Tests', () => {
               type: 'string',
               description: expect.stringContaining('working directory'),
             },
-          },
+            sessionId: expect.objectContaining({
+              type: 'string',
+            }),
+            messages: expect.objectContaining({
+              type: 'array',
+            }),
+            stateless: expect.objectContaining({
+              type: 'boolean',
+            }),
+          }),
           required: ['prompt'],
-        },
+        }),
       });
     });
   });
